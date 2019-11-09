@@ -96,8 +96,9 @@ class coco:
 #         list.append((key, file_name, caption))
 
 
-flicker8k = 'G:/uTorrent/Flickr8k/Flickr8k_split_annotation/'
-os.listdir(flicker8k)
+image_path = '../datasets/flickr8k/flickr8k'
+annotation_path = '../datasets/flickr8k/Flickr8k_split_annotation/'
+os.listdir(annotation_path)
 
 
 def parse_token(path):
@@ -144,13 +145,13 @@ def parse_crowd_flower_annotations(path):
 
 
 # Image caption
-image_captions = parse_token(flicker8k + 'Flickr8k.token.txt')
+image_captions = parse_token(annotation_path + 'Flickr8k.token.txt')
 print(image_captions['1370615506_2b96105ca3.jpg'])
-image_captions = parse_token(flicker8k + 'Flickr8k.lemma.token.txt')
+image_captions = parse_token(annotation_path + 'Flickr8k.lemma.token.txt')
 print(image_captions['1370615506_2b96105ca3.jpg'])
 
 # expert and crowd-flower annotations judgement
-expert_annotations = parse_expert_annotations(flicker8k + 'ExpertAnnotations.txt')
+expert_annotations = parse_expert_annotations(annotation_path + 'ExpertAnnotations.txt')
 print(expert_annotations['1056338697_4f7d7ce270.jpg'])
-crowd_flower_annotations = parse_crowd_flower_annotations(flicker8k + 'CrowdFlowerAnnotations.txt')
+crowd_flower_annotations = parse_crowd_flower_annotations(annotation_path + 'CrowdFlowerAnnotations.txt')
 print(crowd_flower_annotations['1056338697_4f7d7ce270.jpg'])
