@@ -14,6 +14,23 @@ import os
 import json
 
 
+class GloveDB:
+    def __init__(self, path):
+        self.path = path
+
+    def build(self):
+        embedding = {}
+        file = open(self.path)
+        lines = file.readlines()
+        for line in lines:
+            values = line.split()
+            word = values[0]
+            feature = np.asarray(values[1:], dtype='float32')
+            embedding[word] = feature
+        file.close()
+        return embedding
+
+
 class Flicker(Dataset):
 
     def __init__(self, path):
@@ -31,9 +48,11 @@ class Flicker(Dataset):
         sample = {}
         return sample
 
+
 image_path = '../datasets/flickr8k/flickr8k'
 annotation_path = '../datasets/flickr8k/Flickr8k_split_annotation/'
 os.listdir(annotation_path)
+
 
 def parse_token(path):
     image_captions = {}
@@ -48,6 +67,7 @@ def parse_token(path):
             image_captions[address][number] = caption
         except ValueError and KeyError:
             print(line)
+    file.close()
     return image_captions
 
 
@@ -62,6 +82,7 @@ def parse_expert_annotations(path):
         if image_captions.get(image) is None:
             image_captions[image] = []
         image_captions[image].append((caption, id, score))
+    file.close()
     return image_captions
 
 
