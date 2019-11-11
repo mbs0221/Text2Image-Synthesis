@@ -34,7 +34,7 @@ class Flicker(Dataset):
 
 
 
-flicker8k = 'G:/uTorrent/Flickr8k/Flickr8k_split_annotation/'
+flicker8k = '../datasets/flickr8k/Flickr8k_split_annotation/'
 os.listdir(flicker8k)
 
 
