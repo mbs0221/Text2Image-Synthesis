@@ -39,13 +39,7 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Flatten(),
-<<<<<<< HEAD
             nn.Linear(512,1),
-=======
-            nn.Linear(512, 128),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(128, 1),
->>>>>>> 0fa479920bef6f3ead5c3f46e14265a581d50e3e
             nn.LeakyReLU(0.2, inplace=True))
 
     def forward(self, image, text):
