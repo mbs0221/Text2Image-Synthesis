@@ -5,11 +5,12 @@ import numpy as np
 
 from discriminator import Discriminator
 
+
 def check_dir(dir_name):
     if not os.path.exists(dir_name):
         os.makedirs(dir_name)
 
-    print ('{} created'.format(dir_name))
+    print('{} created'.format(dir_name))
 
 
 def check_args(args):
@@ -38,6 +39,7 @@ def check_args(args):
 
     return args
 
+
 def print_network(model, name):
     """ A function for printing total number of model parameters """
     num_params = 0
@@ -48,8 +50,8 @@ def print_network(model, name):
     print(name)
     print("Total number of parameters: {}".format(num_params))
 
-def main():
 
+def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument_group('Dataset related arguments')
@@ -117,22 +119,22 @@ def main():
     check_args(args)
 
     disc = Discriminator(batch_size=args.batch_size,
-                              img_size=args.img_size,
-                              text_embed_dim=args.text_embed_dim,
-                              text_reduced_dim=args.text_reduced_dim)
+                         img_size=args.img_size,
+                         text_embed_dim=args.text_embed_dim,
+                         text_reduced_dim=args.text_reduced_dim)
     print('-------------  Discriminator Model Info  ---------------')
     print_network(disc, 'D')
     print('------------------------------------------------')
     disc.train()
-    #imgs = torch.rand(1,3,64,64)
+    # imgs = torch.rand(1,3,64,64)
 
-    #测试用的图像 图像大小 64*64*3
-    imgs = torch.ones(1,3,64,64)
+    # 测试用的图像 图像大小 64*64*3
+    imgs = torch.ones(1, 3, 64, 64)
     print("-----images----")
     print(imgs)
 
-    #测试用的文本嵌入 文本一维 4800
-    embed = torch.rand(1,4800)
+    # 测试用的文本嵌入 文本一维 4800
+    embed = torch.rand(1, 4800)
     print("-----embed----")
     print(embed)
 
@@ -142,6 +144,7 @@ def main():
     print(out)
     print("-----result2----")
     print(logit)
+
 
 if __name__ == '__main__':
     main()

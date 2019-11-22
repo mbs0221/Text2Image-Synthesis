@@ -22,16 +22,13 @@ class Discriminator(nn.Module):
             nn.Conv2d(128, 256, 4, 2, 1, bias=False),
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2, inplace=True))
-            #nn.Conv2d(256, 512, 4, 2, 1, bias=False),
-            #nn.BatchNorm2d(512),
-            #nn.LeakyReLU(0.2, inplace=True))
-
-
+        # nn.Conv2d(256, 512, 4, 2, 1, bias=False),
+        # nn.BatchNorm2d(512),
+        # nn.LeakyReLU(0.2, inplace=True))
 
         # 定义一个线性变换来减少文本嵌入的维度
         # from text_embed_dim to text_reduced_dim
         self.text_reduced_op = nn.Linear(self.text_embed_dim, self.text_reduced_dim)
-
 
         # 真正的判别器网络
         self.cat_net = nn.Sequential(
@@ -42,9 +39,14 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Flatten(),
+<<<<<<< HEAD
             nn.Linear(512,1),
+=======
+            nn.Linear(512, 128),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Linear(128, 1),
+>>>>>>> 0fa479920bef6f3ead5c3f46e14265a581d50e3e
             nn.LeakyReLU(0.2, inplace=True))
-
 
     def forward(self, image, text):
         """
@@ -73,7 +75,7 @@ class Discriminator(nn.Module):
         print(text_reduced.shape)
         text_reduced = text_reduced.unsqueeze(3)  # (batch_size, text_reduced_dim, 1, 1)
         print(text_reduced.shape)
-        text_reduced = text_reduced.expand(1, self.text_reduced_dim, 8, 8)     # (batch_size, text_reduced_dim, 8, 8)
+        text_reduced = text_reduced.expand(1, self.text_reduced_dim, 8, 8)  # (batch_size, text_reduced_dim, 8, 8)
         print(text_reduced.shape)
 
         concat_out = torch.cat((d_net_out, text_reduced), 1)  # (batch_size, 8, 8, 256+text_reduced_dim)
