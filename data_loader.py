@@ -1,10 +1,12 @@
 import re
 import torch
+from PIL import Image
 
 from torch.utils.data import Dataset
 from torchtext import data
 from torchtext.vocab import Vectors
 from torch.nn import init
+from torchvision.datasets import VisionDataset
 from tqdm import tqdm
 import numpy as np
 import os
@@ -31,22 +33,31 @@ class GloveDB:
         return embedding
 
 
-class Flicker(Dataset):
+class Flicker(VisionDataset):
 
-    def __init__(self, path):
-        self.path = path
-        self.load()
-        self.images = []
+    def __init__(self, root, ann_file, transform=None, target_transform=None):
+        super(Flicker, self).__init__(root, transform=transform,
+                                      target_transform=target_transform)
+        self.annotations = parse_token(ann_file)
+        self.ids = list(sorted(self.annotations.keys()))
 
-    def load(self):
-        pass
+    def __getitem__(self, index):
+        img_id = self.ids[index]
+
+        # Image
+        img = Image.open(img_id)
+        if self.transform is not None:
+            img = self.transform(img)
+
+        # Captions
+        target = self.annotations[img_id]
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return img, target
 
     def __len__(self):
-        return self.images.__len__()
-
-    def __getitem__(self, item):
-        sample = {}
-        return sample
+        return len(self.ids)
 
 
 image_path = '../datasets/flickr8k/flickr8k'
@@ -78,7 +89,7 @@ def parse_expert_annotations(path):
     for line in lines:
         image, caption_id, rank1, rank2, rank3 = line.strip().split('\t')
         caption, id = caption_id.split('#')
-        score = np.mean(np.array([int(number) for number in [rank1, rank2, rank3]]))
+        score = np.mean(np.array([float(number)/4.0 for number in [rank1, rank2, rank3]]))
         if image_captions.get(image) is None:
             image_captions[image] = []
         image_captions[image].append((caption, id, score))
