@@ -42,9 +42,7 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Flatten(),
-            nn.Linear(512,128),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(128,1),
+            nn.Linear(512,1),
             nn.LeakyReLU(0.2, inplace=True))
 
 

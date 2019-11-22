@@ -138,7 +138,7 @@ def main():
 
     out, logit = disc(imgs, embed)
 
-    print("-----result1----")+
+    print("-----result1----")
     print(out)
     print("-----result2----")
     print(logit)
