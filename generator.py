@@ -6,9 +6,8 @@ import torch.nn as nn
 
 class Generator(nn.Module):
 
-    def __init__(self, image_size, z_dim, text_embedding_dim):
+    def __init__(self, z_dim, text_embedding_dim):
         super(Generator, self).__init__()
-        self.image_size = image_size
         self.z_dim = z_dim
         self.text_embedding_dim = text_embedding_dim
         self.generator = nn.Sequential(
