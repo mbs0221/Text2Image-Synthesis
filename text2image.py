@@ -28,10 +28,10 @@ opt = parser.parse_args()
 print(opt)
 
 
-def coco_captions(root, type):
+def coco_captions(path, type):
     dataset = datasets.CocoCaptions(
-        root=f"{root}/images/{type}2014",
-        annFile=f"{root}/annotations/captions_{type}2014.json",
+        root=f"{path}/images/{type}2014",
+        annFile=f"{path}/annotations/captions_{type}2014.json",
         transform=transforms.Compose([
             transforms.Resize([opt.img_size, opt.img_size]),
             transforms.ToTensor(),
@@ -39,6 +39,16 @@ def coco_captions(root, type):
         ])
     )
     return dataset
+
+
+def sample_image(n_row, batches_done):
+    """
+    Saves a grid of generated digits ranging from 0 to n_classes
+    :param n_row:
+    :param batches_done:
+    :return:
+    """
+    pass
 
 
 # Initialize generator and discriminator
@@ -107,6 +117,8 @@ for epoch in range(opt.n_epochs):
 
         optimizer_D.zero_grad()
 
+        # TODO: Image embedding
+
         # Loss for real images
         validity_real = discriminator(real_images, text_embedding)
         d_real_loss = adversarial_loss(validity_real, valid)
@@ -114,6 +126,8 @@ for epoch in range(opt.n_epochs):
         # Loss for fake images
         validity_fake = discriminator(gen_images.detach(), text_embedding)
         d_fake_loss = adversarial_loss(validity_fake, fake)
+
+        # TODO: Loss for interpolated samples
 
         # Total discriminator loss
         d_loss = (d_real_loss + d_fake_loss) / 2
