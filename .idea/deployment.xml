@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" autoUpload="Always" autoUploadExternalChanges="true">
+    <serverData>
+      <paths name="ubuntu@10.10.102.244:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mbs0221/projects/Text2Image-Synthesis" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+    <option name="myAutoUpload" value="ALWAYS" />
+  </component>
+</project>

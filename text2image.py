@@ -1,11 +1,14 @@
 import argparse
 import cv2
 import os
+import numpy as np
 
 import torch
+from torch.utils.data import DataLoader
+from torchtext import data
+from torchtext.vocab import Vectors, GloVe
 import torchvision.models as models
 from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
 
 from generator import Generator
 from discriminator import Discriminator
@@ -41,6 +44,13 @@ def coco_captions(path, type):
     return dataset
 
 
+def get_annotations(dataset):
+    annotations = []
+    for (image, target) in enumerate(dataset):
+        annotations.append(target)
+    return annotations
+
+
 def sample_image(n_row, batches_done):
     """
     Saves a grid of generated digits ranging from 0 to n_classes
@@ -59,13 +69,6 @@ discriminator = Discriminator(batch_size=opt.batch_size,
                               text_embed_dim=opt.text_embedding_dim,
                               text_reduced_dim=opt.text_reduced_dim)
 
-# load vectors from file
-# vectors = Vectors(name='../glove/glove.6B.200d.txt')
-# TEXT = data.Field(sequential=True)
-# TEXT.build_vocab(train, vectors=GloVe(name='6B', dim=300))
-# TEXT.vocab
-
-
 # Data-sets
 root = "../datasets/coco-2014"
 train = coco_captions(root, 'train')
@@ -76,6 +79,14 @@ print(f'train:{len(train)}, val:{len(val)}')
 img, target = train[0]  # load 4th sample
 print(f"Image Size:{img.size}")
 print(target)
+
+# Build vocabulary from dataset
+train_annotations = get_annotations(train)
+val_annotations = get_annotations(val)
+annotations = np.hstack([train_annotations, val_annotations], dim=1)
+vectors = Vectors(name='../glove/glove.6B.200d.txt')
+TEXT = data.Field(sequential=True, lower=True, batch_first=True, eos_token='.')
+TEXT.build_vocab(annotations, vectors=GloVe(name='6B', dim=300))
 
 # Configure data-loader
 data_loader = torch.utils.data.DataLoader(dataset=train, batch_size=opt.batch_size, shuffle=False, num_workers=4)
