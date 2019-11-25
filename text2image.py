@@ -2,13 +2,16 @@ import argparse
 import cv2
 import os
 import numpy as np
-
+import torch.nn.functional as F
 import torch
+from torch import nn
 from torch.utils.data import DataLoader
 from torchtext import data
+from torchtext.datasets import IMDB
 from torchtext.vocab import Vectors, GloVe
 import torchvision.models as models
-from torchvision import datasets, transforms
+from torchvision import transforms
+from torchvision.datasets import Flickr8k, CocoCaptions
 
 from generator import Generator
 from discriminator import Discriminator
@@ -31,8 +34,24 @@ opt = parser.parse_args()
 print(opt)
 
 
+class CALayer(nn.Module):
+    """
+    Conditioning Augmentation (CA)
+    """
+
+    def __init__(self, input_dim, latent_dim):
+        super(CALayer, self).__init__()
+        self.mean = nn.Linear(input_dim, latent_dim)
+        self.var = nn.Linear(input_dim, latent_dim)
+
+    def forward(self, embedding):
+        z_mean = self.mean(embedding)
+        z_var = self.var(embedding)
+        return torch.normal(z_mean, z_var)
+
+
 def coco_captions(path, type):
-    dataset = datasets.CocoCaptions(
+    dataset = CocoCaptions(
         root=f"{path}/images/{type}2014",
         annFile=f"{path}/annotations/captions_{type}2014.json",
         transform=transforms.Compose([
@@ -46,8 +65,8 @@ def coco_captions(path, type):
 
 def get_annotations(dataset):
     annotations = []
-    for (image, target) in enumerate(dataset):
-        annotations.append(target)
+    for i, (_, target) in enumerate(dataset):
+        annotations.extend(target)
     return annotations
 
 
@@ -62,7 +81,8 @@ def sample_image(n_row, batches_done):
 
 
 # Initialize generator and discriminator
-text_encoder = TextEncoder(32, 32, 50)
+text_encoder = TextEncoder(32, 128, 50)
+ca_layer = CALayer(50, 36)
 generator = Generator(opt.latent_dim, opt.text_embedding_dim)
 discriminator = Discriminator(batch_size=opt.batch_size,
                               img_size=opt.img_size,
@@ -73,6 +93,7 @@ discriminator = Discriminator(batch_size=opt.batch_size,
 root = "../datasets/coco-2014"
 train = coco_captions(root, 'train')
 val = coco_captions(root, 'val')
+text = IMDB()
 
 print(f'train:{len(train)}, val:{len(val)}')
 
@@ -81,12 +102,13 @@ print(f"Image Size:{img.size}")
 print(target)
 
 # Build vocabulary from dataset
-train_annotations = get_annotations(train)
-val_annotations = get_annotations(val)
-annotations = np.hstack([train_annotations, val_annotations], dim=1)
-vectors = Vectors(name='../glove/glove.6B.200d.txt')
+# train_annotations = get_annotations(train)
+# val_annotations = get_annotations(val)
+# annotations = np.hstack([train_annotations, val_annotations])
+vectors = Vectors(name='../glove/glove.6B/glove.6B.100d.txt')
 TEXT = data.Field(sequential=True, lower=True, batch_first=True, eos_token='.')
-TEXT.build_vocab(annotations, vectors=GloVe(name='6B', dim=300))
+TEXT.build_vocab(train, vectors=vectors)
+TEXT.build_vocab(train, vectors=GloVe(name='6B', dim=300))
 
 # Configure data-loader
 data_loader = torch.utils.data.DataLoader(dataset=train, batch_size=opt.batch_size, shuffle=False, num_workers=4)
@@ -110,13 +132,14 @@ for epoch in range(opt.n_epochs):
         # Configure input
         real_images = Variable(imgs.type(Tensor))
         text_embedding = text_encoder(targets)
+        condition = ca_layer(text_embedding)
 
         # -----------------
         #  Train Generator
         # -----------------
 
         # generate fake images with text-embedding
-        gen_images = generator(text_embedding)
+        gen_images = generator(condition)
         validity = discriminator(gen_images)
         g_loss = adversarial_loss(validity, valid)
         g_loss.backward()
@@ -142,7 +165,6 @@ for epoch in range(opt.n_epochs):
 
         # Total discriminator loss
         d_loss = (d_real_loss + d_fake_loss) / 2
-
         d_loss.backward()
         optimizer_D.step()
         print(

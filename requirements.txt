@@ -1,1 +1,3 @@
 pycocotools
+spacy
+torchtext

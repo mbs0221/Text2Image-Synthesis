@@ -6,11 +6,11 @@ import torch.nn as nn
 
 class Generator(nn.Module):
 
-    def __init__(self, z_dim, text_embedding_dim):
+    def __init__(self, nz):
         super(Generator, self).__init__()
-        self.z_dim = z_dim
-        self.text_embedding_dim = text_embedding_dim
+        self.nz = nz
         self.generator = nn.Sequential(
+            # input is Z, going into a convolution
             nn.ReLU(),
             nn.ConvTranspose2d(512, 256, 4, 2, 1),
             nn.BatchNorm2d(256),
@@ -25,6 +25,8 @@ class Generator(nn.Module):
             nn.Tanh()
         )
 
-    def forward(self, input, z):
+    def forward(self, input):
+        # Ng=128, Nz=100
         embedding = torch.cat([input, z], 1)
-        return self.generator(embedding)
+        image = embedding.reshape((-1, 16, 16, 3))
+        return self.generator(image)
