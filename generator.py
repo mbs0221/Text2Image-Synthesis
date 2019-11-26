@@ -6,27 +6,42 @@ import torch.nn as nn
 
 class Generator(nn.Module):
 
-    def __init__(self, nz):
+    def __init__(self, latent_dim, text_dim, ngf=64, n_channels=3):
+        """
+
+        :param latent_dim: The dimensional of latent space
+        :param text_dim: the dimensional of text-embedding
+        :param ngf: Size of feature maps in generator
+        :param n_channels: the channel of image
+        """
         super(Generator, self).__init__()
-        self.nz = nz
+        self.latent_dim = latent_dim
+        self.text_dim = text_dim
         self.generator = nn.Sequential(
-            # input is Z, going into a convolution
-            nn.ReLU(),
-            nn.ConvTranspose2d(512, 256, 4, 2, 1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(),
-            nn.ConvTranspose2d(256, 128, 4, 2, 1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, 4, 2, 1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.ConvTranspose2d(64, 3, 4, 2, 1),
+            # [-, nz, 1, 1]
+            nn.ConvTranspose2d(latent_dim + text_dim, ngf * 8, 4, 1, 0, bias=False),
+            nn.BatchNorm2d(ngf * 8),
+            nn.ReLU(True),
+            # [-, 512, 4, 4]
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 4),
+            nn.ReLU(True),
+            # [-, 256, 8, 8]
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf * 2),
+            nn.ReLU(True),
+            # [-, 128, 16, 16]
+            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ngf),
+            nn.ReLU(True),
+            # [-, 64, 32, 32]
+            nn.ConvTranspose2d(ngf, n_channels, 4, 2, 1, bias=False),
             nn.Tanh()
+            # [-, nc, 64, 64]
         )
 
     def forward(self, input):
-        # Ng=128, Nz=100
+        batch_size = input.shape[0]
+        z = torch.rand(batch_size, self.latent_dim, 1, 1)
         embedding = torch.cat([input, z], 1)
-        image = embedding.reshape((-1, 16, 16, 3))
-        return self.generator(image)
+        return self.generator(embedding)

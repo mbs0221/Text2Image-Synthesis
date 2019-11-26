@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchtext import data
-from torchtext.datasets import IMDB
+from torchvision import datasets
 from torchtext.vocab import Vectors, GloVe
 import torchvision.models as models
 from torchvision import transforms
@@ -16,22 +16,6 @@ from torchvision.datasets import Flickr8k, CocoCaptions
 from generator import Generator
 from discriminator import Discriminator
 from text_encoder import TextEncoder
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
-parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument('--latent_dim', type=int, default=32, help='dimensionality of the latent space')
-parser.add_argument('--img_size', type=int, default=64, help='size of each image dimension')
-parser.add_argument("--channels", type=int, default=1, help="number of image channels")
-parser.add_argument('--text_embedding_dim', type=int, default=48, help='Size of the embedding for the captions')
-parser.add_argument('--text_reduced_dim', type=int, default=32, help='Reduced dimension of the caption encoding')
-parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
-opt = parser.parse_args()
-print(opt)
 
 
 class CALayer(nn.Module):
@@ -50,12 +34,12 @@ class CALayer(nn.Module):
         return torch.normal(z_mean, z_var)
 
 
-def coco_captions(path, type):
+def coco_captions(path, type, image_size=64):
     dataset = CocoCaptions(
         root=f"{path}/images/{type}2014",
         annFile=f"{path}/annotations/captions_{type}2014.json",
         transform=transforms.Compose([
-            transforms.Resize([opt.img_size, opt.img_size]),
+            transforms.Resize([image_size, image_size]),
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5])
         ])
@@ -80,20 +64,42 @@ def sample_image(n_row, batches_done):
     pass
 
 
-# Initialize generator and discriminator
+parser = argparse.ArgumentParser()
+parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
+parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
+parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
+parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
+parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
+parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
+parser.add_argument('--latent_dim', type=int, default=32, help='dimensionality of the latent space')
+parser.add_argument('--image_size', type=int, default=64, help='size of each image dimension')
+parser.add_argument("--n_channels", type=int, default=1, help="number of image channels")
+parser.add_argument('--text_dim', type=int, default=48, help='Size of the embedding for the captions')
+parser.add_argument('--text_reduced_dim', type=int, default=32, help='Reduced dimension of the caption encoding')
+parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
+parser.add_argument('--max_length', type=int, default=50, help='the max length of input sequence')
+args = parser.parse_args()
+print(args)
+
+batch_size = args.batch_size
+latent_dim = args.latent_dim
+text_dim = args.text_dim
+text_reduced_dim = args.text_reduced_dim
+image_size = args.image_size
+n_channels = args.n_channels
+
+# Initialize text-encoder, ca-layer, generator, discriminator
 text_encoder = TextEncoder(32, 128, 50)
-ca_layer = CALayer(50, 36)
-generator = Generator(opt.latent_dim, opt.text_embedding_dim)
-discriminator = Discriminator(batch_size=opt.batch_size,
-                              img_size=opt.img_size,
-                              text_embed_dim=opt.text_embedding_dim,
-                              text_reduced_dim=opt.text_reduced_dim)
+generator = nn.Sequential(
+    CALayer(50, 36),
+    Generator(latent_dim=latent_dim, text_dim=text_dim)
+)
+discriminator = Discriminator(text_embed_dim=text_dim, text_reduced_dim=text_reduced_dim)
 
 # Data-sets
 root = "../datasets/coco-2014"
 train = coco_captions(root, 'train')
 val = coco_captions(root, 'val')
-text = IMDB()
 
 print(f'train:{len(train)}, val:{len(val)}')
 
@@ -105,25 +111,26 @@ print(target)
 # train_annotations = get_annotations(train)
 # val_annotations = get_annotations(val)
 # annotations = np.hstack([train_annotations, val_annotations])
-vectors = Vectors(name='../glove/glove.6B/glove.6B.100d.txt')
-TEXT = data.Field(sequential=True, lower=True, batch_first=True, eos_token='.')
-TEXT.build_vocab(train, vectors=vectors)
-TEXT.build_vocab(train, vectors=GloVe(name='6B', dim=300))
+
+vectors = Vectors('../glove/glove.6B/glove.6B.300d.txt')
+TEXT = data.Field(sequential=True, lower=True, use_vocab=True, batch_first=True, eos_token='.')
+TEXT.build_vocab(train, val, vectors=vectors)
+TEXT.build_vocab(train, val, vectors=GloVe(name='6B', dim=300))
 
 # Configure data-loader
-data_loader = torch.utils.data.DataLoader(dataset=train, batch_size=opt.batch_size, shuffle=False, num_workers=4)
+data_loader = torch.utils.data.DataLoader(dataset=train, batch_size=batch_size, shuffle=False, num_workers=4)
 
 # Loss function
 adversarial_loss = torch.nn.BCELoss()
 
 # Optimizers
-optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
-optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
+optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
+optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
 
 # ----------
 #  Training
 # ----------
-for epoch in range(opt.n_epochs):
+for epoch in range(args.n_epochs):
     for i, (images, targets) in enumerate(data_loader):
         # Adversarial ground truths
         valid = Variable(Tensor(images.shape[0], 1).fill_(1.0), requires_grad=False)
@@ -131,15 +138,16 @@ for epoch in range(opt.n_epochs):
 
         # Configure input
         real_images = Variable(imgs.type(Tensor))
+
+        # text-embedding
         text_embedding = text_encoder(targets)
-        condition = ca_layer(text_embedding)
 
         # -----------------
         #  Train Generator
         # -----------------
 
         # generate fake images with text-embedding
-        gen_images = generator(condition)
+        gen_images = generator(text_embedding)
         validity = discriminator(gen_images)
         g_loss = adversarial_loss(validity, valid)
         g_loss.backward()

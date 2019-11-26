@@ -8,7 +8,7 @@ from torchtext import data
 
 class TextEncoder(nn.Module):
 
-    def __init__(self, hidden_size, output_size, max_length=30):
+    def __init__(self, hidden_size, output_size, max_length=50):
         super(TextEncoder, self).__init__()
         # Text-Embedding
         self.text_embedding = nn.Sequential(

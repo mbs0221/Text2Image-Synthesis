@@ -5,7 +5,7 @@ from torch.nn import functional as F
 
 
 class Discriminator(nn.Module):
-    def __init__(self, batch_size, img_size, text_embed_dim, text_reduced_dim):
+    def __init__(self, text_embed_dim, text_reduced_dim):
         super(Discriminator, self).__init__()
 
         self.text_embed_dim = text_embed_dim
