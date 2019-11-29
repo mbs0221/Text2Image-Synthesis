@@ -28,15 +28,17 @@ class CALayer(nn.Module):
     Conditioning Augmentation (CA)
     """
 
-    def __init__(self, input_dim, latent_dim):
+    def __init__(self, in_features, out_features):
         super(CALayer, self).__init__()
-        self.mean = nn.Linear(input_dim, latent_dim)
-        self.var = nn.Linear(input_dim, latent_dim)
+        self.mean = nn.Linear(in_features, out_features)
+        self.var = nn.Linear(in_features, out_features)
 
-    def forward(self, embedding):
-        z_mean = self.mean(embedding)
-        z_var = self.var(embedding)
-        return torch.normal(z_mean, z_var)
+    def forward(self, input):
+        x = input.squeeze()
+        z_mean = self.mean(x)
+        z_var = self.var(x)
+        y = torch.normal(z_mean, z_var)
+        return y.unsqueeze(2).unsqueeze(3)
 
 
 class CocoCaptions(data.Dataset):
@@ -143,7 +145,7 @@ if __name__ == '__main__':
     n_epochs = args.n_epochs
     latent_dim = args.latent_dim
     text_dim = args.text_dim
-    text_reduced_dim = arg.text_reduced_dim
+    text_reduced_dim = args.text_reduced_dim
     cond_dim = args.cond_dim
     kqv_dim = args.kqv_dim
     image_size = args.image_size

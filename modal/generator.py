@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 
 
-class MBS_Generator(nn.Module):
+class MBSGenerator(nn.Module):
 
     def __init__(self, latent_dim, text_dim, ngf=64, n_channels=3):
         """
@@ -14,7 +14,7 @@ class MBS_Generator(nn.Module):
         :param ngf: Size of feature maps in generator
         :param n_channels: the channel of image
         """
-        super(MBS_Generator, self).__init__()
+        super(MBSGenerator, self).__init__()
         self.latent_dim = latent_dim
         self.text_dim = text_dim
         self.generator = nn.Sequential(
