@@ -29,10 +29,10 @@ class Attn(nn.Module):
         return attn
 
 
-class ZXO_TextEncoder(nn.Module):
+class ZXOTextEncoder(nn.Module):
     def __init__(self, vocab_size, emb_dim, hidden_size, weight, kqv_dim, rnn_type='gru', bidirectional=False,
                  batch_first=False, padding_idx=None):
-        super(TextEncoder, self).__init__()
+        super(ZXOTextEncoder, self).__init__()
         self.embed = nn.Embedding(vocab_size, embedding_dim=emb_dim, _weight=weight)
         if rnn_type == 'rnn':
             self.rnn = RNN(emb_dim, hidden_size, bidirectional=bidirectional, num_layers=6, batch_first=batch_first)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
     print(embedding_matrix.shape)
     kqv_dim = 128
-    text_encoder = ZXO_TextEncoder(num_words, num_features, 64, embedding_matrix, kqv_dim)
+    text_encoder = ZXOTextEncoder(num_words, num_features, 64, embedding_matrix, kqv_dim)
     print(text_encoder)
 
     """

@@ -4,9 +4,9 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 
 
-class Discriminator(nn.Module):
+class ZXHDiscriminator(nn.Module):
     def __init__(self, text_embed_dim, text_reduced_dim):
-        super(Discriminator, self).__init__()
+        super(ZXHDiscriminator, self).__init__()
 
         self.text_embed_dim = text_embed_dim
         self.text_reduced_dim = text_reduced_dim
@@ -39,7 +39,7 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Flatten(),
-            nn.Linear(512,1),
+            nn.Linear(512, 1),
             nn.LeakyReLU(0.2, inplace=True))
 
     def forward(self, image, text):
@@ -79,3 +79,47 @@ class Discriminator(nn.Module):
         output = F.sigmoid(logit)
 
         return output, logit
+
+
+class MBSDiscriminator(nn.Module):
+
+    def __init__(self, ndf, text_dim, n_channels):
+        super(MBSDiscriminator, self).__init__()
+        self.text_dim = text_dim
+        self.extractor64 = nn.Sequential(
+            # [-, nc, 64, 64]
+            nn.Conv2d(n_channels, ndf, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf),
+            nn.ReLU(True),
+            # [-, ndf, 32, 32]
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 2),
+            nn.ReLU(True),
+            # [-, ndf*2, 16, 16]
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 4),
+            nn.ReLU(True),
+            # [-, ndf*4, 8, 8]
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+            nn.BatchNorm2d(ndf * 8),
+            nn.ReLU(True),
+            # [-, ndf*8, 4, 4]
+        )
+        embedding_dim = ndf * 8 + text_dim
+        self.discriminator = nn.Sequential(
+            # [-, embedding_dim, 4, 4]
+            nn.Conv2d(embedding_dim, ndf, 1, 1, 0, bias=False),
+            nn.BatchNorm2d(ndf),
+            nn.ReLU(True),
+            # [-, ndf, 4, 4]
+            nn.Conv2d(ndf, 1, 3, 1, 0, bias=False),
+            nn.MaxPool2d(2),
+            nn.Sigmoid()
+            # [-, 1, 1, 1]
+        )
+
+    def forward(self, image, text):
+        image_embedding = self.extractor64(image)
+        text_embedding = text.repeat(1, 1, 4, 4)
+        embedding = torch.cat([image_embedding, text_embedding], dim=1)
+        return self.discriminator(embedding)

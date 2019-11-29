@@ -1,9 +1,10 @@
-from .discriminator import Discriminator
-from .generator import Generator
+from .discriminator import MBSDiscriminator, ZXHDiscriminator
+from .generator import MBS_Generator
 from .text_encoder import TextEncoder, AttnTextEncoder
-from .TextEncoderzxo import Attn, ZXO_TextEncoder
+from .TextEncoderzxo import Attn, ZXOTextEncoder
 
 __all__ = (
-    'Discriminator', 'Generator',
+    'MBSGenerator',
+    'ZXHDiscriminator', 'MBSDiscriminator',
     'TextEncoder', 'AttnTextEncoder',
-    'Attn', 'ZXO_TextEncoder')
+    'Attn', 'ZXOTextEncoder')

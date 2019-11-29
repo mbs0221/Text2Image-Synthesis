@@ -20,7 +20,7 @@ from torchvision import datasets
 from torchvision import transforms
 from torchvision.datasets import Flickr8k
 from torchvision.datasets.vision import StandardTransform
-from modal import Generator, Discriminator, Attn, TextEncoder
+from modal import MBSGenerator, ZXHDiscriminator, Attn, TextEncoder
 
 
 class CALayer(nn.Module):
@@ -128,6 +128,7 @@ if __name__ == '__main__':
     parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
     parser.add_argument('--latent_dim', default=48, type=int, help='the dimensional of latent space')
     parser.add_argument('--text_dim', default=48, type=int, help='the dimensional of text-embedding')
+    parser.add_argument('--text_reduced_dim', default=48, type=int, help='the dimensional of text-embedding')
     parser.add_argument('--cond_dim', default=48, type=int, help='the dimensional of conditioning')
     parser.add_argument('--image_size', default=64, type=int, help='the image size')
     parser.add_argument('--n_channels', default=3, type=int, help='the number of image channels')
@@ -142,6 +143,7 @@ if __name__ == '__main__':
     n_epochs = args.n_epochs
     latent_dim = args.latent_dim
     text_dim = args.text_dim
+    text_reduced_dim = arg.text_reduced_dim
     cond_dim = args.cond_dim
     kqv_dim = args.kqv_dim
     image_size = args.image_size
@@ -175,9 +177,10 @@ if __name__ == '__main__':
     text_encoder = TextEncoder(vocab_size, embedding_dim, text_dim, kqv_dim, embedding, padding_idx=PAD_IDX)
     generator = nn.Sequential(
         CALayer(text_dim, cond_dim),
-        Generator(latent_dim, cond_dim, ngf, n_channels)
+        MBSGenerator(latent_dim, cond_dim, ngf, n_channels)
     )
-    discriminator = Discriminator(ndf, text_dim, n_channels)
+    # discriminator = Discriminator(ndf, text_dim, n_channels)
+    discriminator = ZXHDiscriminator(text_dim, text_reduced_dim)
 
     # load pre-trained modal
     print('load pre-trained modal')
