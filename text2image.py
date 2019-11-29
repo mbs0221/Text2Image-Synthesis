@@ -22,7 +22,7 @@ from torchvision.datasets import Flickr8k
 from torchvision.datasets.vision import StandardTransform
 from torchvision.utils import save_image
 
-from modal import MBSGenerator, ZQHDiscriminator, Attn, TextEncoder
+from modal import MBSGenerator, ZQHDiscriminator, Attn, TextEncoder, TVLoss
 
 
 class CALayer(nn.Module):
@@ -205,6 +205,7 @@ if __name__ == '__main__':
 
     # loss function
     adversarial_loss = torch.nn.BCELoss()
+    tv_loss = TVLoss()
 
     # cuda
     if cuda:
@@ -256,7 +257,7 @@ if __name__ == '__main__':
 
             # Loss measures generator's ability to fool the discriminator
             validity = discriminator(gen_images, text_embedding)
-            g_loss = adversarial_loss(validity, valid)
+            g_loss = adversarial_loss(validity, valid) + tv_loss(gen_images)
             g_loss.backward()
             optimizer_G.step()
 
