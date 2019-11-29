@@ -1,5 +1,5 @@
 # Text2Image-Synthesis
-* CGAN
+* C-GAN
 * TextEncoder
 * Dataset: COCO-Caption
 ~~~

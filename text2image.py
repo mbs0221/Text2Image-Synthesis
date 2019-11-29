@@ -20,7 +20,7 @@ from torchvision import datasets
 from torchvision import transforms
 from torchvision.datasets import Flickr8k
 from torchvision.datasets.vision import StandardTransform
-from modal import MBSGenerator, ZXHDiscriminator, Attn, TextEncoder
+from modal import MBSGenerator, ZQHDiscriminator, Attn, TextEncoder
 
 
 class CALayer(nn.Module):
@@ -182,7 +182,7 @@ if __name__ == '__main__':
         MBSGenerator(latent_dim, cond_dim, ngf, n_channels)
     )
     # discriminator = Discriminator(ndf, text_dim, n_channels)
-    discriminator = ZXHDiscriminator(text_dim, text_reduced_dim)
+    discriminator = ZQHDiscriminator(text_dim, text_reduced_dim)
 
     # load pre-trained modal
     print('load pre-trained modal')

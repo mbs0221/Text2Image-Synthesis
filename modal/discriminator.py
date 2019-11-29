@@ -4,9 +4,9 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 
 
-class ZXHDiscriminator(nn.Module):
+class ZQHDiscriminator(nn.Module):
     def __init__(self, text_embed_dim, text_reduced_dim):
-        super(ZXHDiscriminator, self).__init__()
+        super(ZQHDiscriminator, self).__init__()
 
         self.text_embed_dim = text_embed_dim
         self.text_reduced_dim = text_reduced_dim
@@ -62,8 +62,9 @@ class ZXHDiscriminator(nn.Module):
 
         d_net_out = self.d_net(image)  # (batch_size, 256, 8, 8)
         text_reduced = self.text_reduced_op(text.squeeze())  # (batch_size, text_reduced_dim)
+        text_reduced = text_reduced.unsqueeze(2).unsqueeze(3)
         text_reduced = text_reduced.repeat(1, 1, 8, 8)  # (batch_size, text_reduced_dim, 8, 8)
-        concat_out = torch.cat((d_net_out, text_reduced), 1)  # (batch_size, 8, 8, 256+text_reduced_dim)
+        concat_out = torch.cat((d_net_out, text_reduced), 1)  # (batch_size, 256+text_reduced_dim, 8, 8)
 
         logit = self.cat_net(concat_out)
 
