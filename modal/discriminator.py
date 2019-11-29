@@ -26,8 +26,6 @@ class ZXHDiscriminator(nn.Module):
         # nn.BatchNorm2d(512),
         # nn.LeakyReLU(0.2, inplace=True))
 
-        # 定义一个线性变换来减少文本嵌入的维度
-        # from text_embed_dim to text_reduced_dim
         self.text_reduced_op = nn.Linear(self.text_embed_dim, self.text_reduced_dim)
 
         # 真正的判别器网络
@@ -63,7 +61,7 @@ class ZXHDiscriminator(nn.Module):
         """
 
         d_net_out = self.d_net(image)  # (batch_size, 256, 8, 8)
-        text_reduced = self.text_reduced_op(text)  # (batch_size, text_reduced_dim)
+        text_reduced = self.text_reduced_op(text.squeeze())  # (batch_size, text_reduced_dim)
         text_reduced = text_reduced.repeat(1, 1, 8, 8)  # (batch_size, text_reduced_dim, 8, 8)
         concat_out = torch.cat((d_net_out, text_reduced), 1)  # (batch_size, 8, 8, 256+text_reduced_dim)
 
