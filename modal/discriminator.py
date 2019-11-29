@@ -38,7 +38,9 @@ class ZQHDiscriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Flatten(),
             nn.Linear(512, 1),
-            nn.LeakyReLU(0.2, inplace=True))
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Sigmoid()
+        )
 
     def forward(self, image, text):
         """
@@ -66,11 +68,7 @@ class ZQHDiscriminator(nn.Module):
         text_reduced = text_reduced.repeat(1, 1, 8, 8)  # (batch_size, text_reduced_dim, 8, 8)
         concat_out = torch.cat((d_net_out, text_reduced), 1)  # (batch_size, 256+text_reduced_dim, 8, 8)
 
-        logit = self.cat_net(concat_out)
-
-        output = F.sigmoid(logit)
-
-        return output, logit
+        return self.cat_net(concat_out)
 
 
 class MBSDiscriminator(nn.Module):

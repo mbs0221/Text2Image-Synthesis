@@ -249,7 +249,7 @@ if __name__ == '__main__':
             gen_images = generator(text_embedding)
 
             # Loss measures generator's ability to fool the discriminator
-            validity = discriminator(gen_images, text_embedding)
+            validity, _ = discriminator(gen_images, text_embedding)
             g_loss = adversarial_loss(validity, valid)
             g_loss.backward()
             optimizer_G.step()
@@ -261,11 +261,11 @@ if __name__ == '__main__':
             optimizer_D.zero_grad()
 
             # loss for (real-image, real-text), (fake-image, real-text), (wrong-image, real-text)
-            validity_real = discriminator(real_images, text_embedding)
+            validity_real, _ = discriminator(real_images, text_embedding)
             d_real_loss = adversarial_loss(validity_real, valid)
 
             validity_fake = discriminator(gen_images.detach(), text_embedding)
-            d_fake_loss = adversarial_loss(validity_fake, fake)
+            d_fake_loss, _ = adversarial_loss(validity_fake, fake)
 
             d_loss = (d_real_loss + d_fake_loss) / 2
             d_loss.backward()
