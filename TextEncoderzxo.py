@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     print(embedding_matrix.shape)
     kqv_dim = 128
-    text_encoder = TextEncoder(num_words, num_features, 64, embedding_matrix, 128)
+    text_encoder = TextEncoder(num_words, num_features, 64, embedding_matrix, kqv_dim)
     print(text_encoder)
 
     """
