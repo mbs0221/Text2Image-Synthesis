@@ -63,15 +63,8 @@ class ZXHDiscriminator(nn.Module):
         """
 
         d_net_out = self.d_net(image)  # (batch_size, 256, 8, 8)
-        print(d_net_out.shape)
         text_reduced = self.text_reduced_op(text)  # (batch_size, text_reduced_dim)
-        text_reduced = text_reduced.unsqueeze(2)  # (batch_size, text_reduced_dim, 1)
-        print(text_reduced.shape)
-        text_reduced = text_reduced.unsqueeze(3)  # (batch_size, text_reduced_dim, 1, 1)
-        print(text_reduced.shape)
-        text_reduced = text_reduced.expand(1, self.text_reduced_dim, 8, 8)  # (batch_size, text_reduced_dim, 8, 8)
-        print(text_reduced.shape)
-
+        text_reduced = text_reduced.repeat(1, 1, 8, 8)  # (batch_size, text_reduced_dim, 8, 8)
         concat_out = torch.cat((d_net_out, text_reduced), 1)  # (batch_size, 8, 8, 256+text_reduced_dim)
 
         logit = self.cat_net(concat_out)
