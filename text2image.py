@@ -34,12 +34,65 @@ class CALayer(nn.Module):
         return torch.normal(z_mean, z_var)
 
 
-def coco_captions(path, type, image_size=64):
+class CocoCaptions(data.Dataset):
+    urls = [
+        'http://images.cocodataset.org/zips/train2014.zip',
+        'http://images.cocodataset.org/zips/val2014.zip',
+        'http://images.cocodataset.org/zips/test2014.zip',
+        'http://images.cocodataset.org/annotations/annotations_trainval2014.zip',
+        'http://images.cocodataset.org/annotations/image_info_test2014.zip'
+    ]
+    name = 'coco'
+    dirname = 'coco-2014'
+
+    def __init__(self, path, ann_path, image_field, text_field, transforms=None, transform=None, target_transform=None,
+                 **kwargs):
+        self.path = path
+        # for vision data
+        has_transforms = transforms is not None
+        has_separate_transform = transform is not None or target_transform is not None
+        if has_transforms and has_separate_transform:
+            raise ValueError("Only transforms or transform/target_transform can "
+                             "be passed as argument")
+
+        # for backwards-compatibility
+        self.transform = transform
+        self.target_transform = target_transform
+
+        if has_separate_transform:
+            transforms = StandardTransform(transform, target_transform)
+        self.transforms = transforms
+
+        # for text data
+        from pycocotools.coco import COCO
+        self.coco = COCO(ann_path)
+        self.ids = list(sorted(self.coco.imgs.keys()))
+        # collect examples
+        coco = self.coco
+        fields = [('image', image_field), ('text', text_field)]
+        examples = []
+        for img_id in self.ids:
+            # text
+            ann_ids = coco.getAnnIds(imgIds=img_id)
+            anns = coco.loadAnns(ann_ids)
+            target = [ann['caption'] for ann in anns]
+            # image
+            path = coco.loadImgs(img_id)[0]['file_name']
+            img = Image.open(os.path.join(self.path, path)).convert('RGB')
+            if self.transforms is not None:
+                img, target = self.transforms(img, target)
+
+            examples.append(Example.fromlist([img, target], fields))
+        super(CocoCaptions, self).__init__(examples, fields)
+
+
+def coco_captions(path, type, nested_field, image_field):
     dataset = CocoCaptions(
-        root=f"{path}/images/{type}2014",
-        annFile=f"{path}/annotations/captions_{type}2014.json",
+        path=f"{path}/resized/{type}2014",
+        ann_path=f"{path}/annotations/captions_{type}2014.json",
+        text_field=nested_field,
+        image_field=image_field,
         transform=transforms.Compose([
-            transforms.Resize([image_size, image_size]),
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5])
         ])
@@ -47,139 +100,167 @@ def coco_captions(path, type, image_size=64):
     return dataset
 
 
-def get_annotations(dataset):
-    annotations = []
-    for i, (_, target) in enumerate(dataset):
-        annotations.extend(target)
-    return annotations
+def weights_init_normal(m):
+    classname = m.__class__.__name__
+    if classname.find("Conv") != -1:
+        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find("ConvTranspose2d") != -1:
+        torch.nn.init.normal_(m.weight.data, 0.0, 0.02)
+    elif classname.find("BatchNorm2d") != -1:
+        torch.nn.init.normal_(m.weight.data, 1.0, 0.02)
+        torch.nn.init.constant_(m.bias.data, 0.0)
 
 
-def sample_image(n_row, batches_done):
-    """
-    Saves a grid of generated digits ranging from 0 to n_classes
-    :param n_row:
-    :param batches_done:
-    :return:
-    """
-    pass
+if __name__ == '__main__':
+    # parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--batch_size', default=32, type=int, help='the training epochs')
+    parser.add_argument('--n_epochs', default=100, type=int, help='the training epochs')
+    parser.add_argument("--lr", type=float, default=0.002, help="adam: learning rate")
+    parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
+    parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
+    parser.add_argument('--latent_dim', default=48, type=int, help='the dimensional of latent space')
+    parser.add_argument('--text_dim', default=48, type=int, help='the dimensional of text-embedding')
+    parser.add_argument('--cond_dim', default=48, type=int, help='the dimensional of conditioning')
+    parser.add_argument('--image_size', default=64, type=int, help='the image size')
+    parser.add_argument('--n_channels', default=3, type=int, help='the number of image channels')
+    parser.add_argument('--kqv_dim', default=50, type=int, help='for attention module')
+    parser.add_argument('--ngf', default=24, type=int, help='Size of feature maps in generator')
+    parser.add_argument('--ndf', default=24, type=int, help='Size of feature maps in discriminator')
+    parser.add_argument('--num_workers', default=1, type=int, help='The number of running threads')
+    parser.add_argument("--sample_interval", type=int, default=60, help="interval between image sampling")
+    args = parser.parse_args()
 
+    batch_size = args.batch_size
+    n_epochs = args.n_epochs
+    latent_dim = args.latent_dim
+    text_dim = args.text_dim
+    cond_dim = args.cond_dim
+    kqv_dim = args.kqv_dim
+    image_size = args.image_size
+    n_channels = args.n_channels
+    ngf = args.ngf
+    ndf = args.ndf
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
-parser.add_argument("--batch_size", type=int, default=64, help="size of the batches")
-parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
-parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument('--latent_dim', type=int, default=32, help='dimensionality of the latent space')
-parser.add_argument('--image_size', type=int, default=64, help='size of each image dimension')
-parser.add_argument("--n_channels", type=int, default=1, help="number of image channels")
-parser.add_argument('--text_dim', type=int, default=48, help='Size of the embedding for the captions')
-parser.add_argument('--text_reduced_dim', type=int, default=32, help='Reduced dimension of the caption encoding')
-parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
-parser.add_argument('--max_length', type=int, default=50, help='the max length of input sequence')
-args = parser.parse_args()
-print(args)
+    # load glove
+    glove = GloVe(name='6B', dim=100)
 
-batch_size = args.batch_size
-latent_dim = args.latent_dim
-text_dim = args.text_dim
-text_reduced_dim = args.text_reduced_dim
-image_size = args.image_size
-n_channels = args.n_channels
+    # COCO-dataset
+    root = "../datasets/coco-2014/"
+    print('load coco-caption')
+    IMAGE = data.RawField(is_target=True)
+    field = data.Field(sequential=True, lower=True)
+    TEXT = data.NestedField(field, use_vocab=True)
+    train = coco_captions(root, 'train', TEXT, IMAGE)
+    val = coco_captions(root, 'val', TEXT, IMAGE)
 
-# Initialize text-encoder, ca-layer, generator, discriminator
-text_encoder = TextEncoder(32, 128, 50)
-generator = nn.Sequential(
-    CALayer(50, 36),
-    Generator(latent_dim=latent_dim, text_dim=text_dim)
-)
-discriminator = Discriminator(text_embed_dim=text_dim, text_reduced_dim=text_reduced_dim)
+    print('build vocabulary from dataset')
+    TEXT.build_vocab(train, val, vectors=glove)
+    TEXT.vocab.vectors.unk_init = init.xavier_uniform
 
-# Data-sets
-root = "../datasets/coco-2014"
-train = coco_captions(root, 'train')
-val = coco_captions(root, 'val')
+    # build vocabulary from dataset
 
-print(f'train:{len(train)}, val:{len(val)}')
+    embedding = TEXT.vocab.vectors
+    vocab_size, embedding_dim = embedding.shape
+    PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
 
-img, target = train[0]  # load 4th sample
-print(f"Image Size:{img.size}")
-print(target)
+    # define modules
+    print('construct text-encoder, ca-layer, generator')
+    text_encoder = TextEncoder(vocab_size, embedding_dim, text_dim, kqv_dim, embedding, padding_idx=PAD_IDX)
+    generator = nn.Sequential(
+        CALayer(text_dim, cond_dim),
+        Generator(latent_dim, cond_dim, ngf, n_channels)
+    )
+    discriminator = Discriminator(ndf, text_dim, n_channels)
 
-# Build vocabulary from dataset
-# train_annotations = get_annotations(train)
-# val_annotations = get_annotations(val)
-# annotations = np.hstack([train_annotations, val_annotations])
+    # load pre-trained modal
+    print('load pre-trained modal')
+    pairs = [
+        (text_encoder, 'text_encoder.pkl'),
+        (generator, 'generator.pkl'),
+        (discriminator, 'discriminator.pkl')
+    ]
+    for (model, path) in pairs:
+        if os.path.exists(path):
+            model.load_state_dict(torch.load(path))
+        else:
+            model.apply(weights_init_normal)
 
-vectors = Vectors('../glove/glove.6B/glove.6B.300d.txt')
-TEXT = data.Field(sequential=True, lower=True, use_vocab=True, batch_first=True, eos_token='.')
-TEXT.build_vocab(train, val, vectors=vectors)
-TEXT.build_vocab(train, val, vectors=GloVe(name='6B', dim=300))
+    # loss function
+    adversarial_loss = torch.nn.BCELoss()
 
-# Configure data-loader
-data_loader = torch.utils.data.DataLoader(dataset=train, batch_size=batch_size, shuffle=False, num_workers=4)
+    # optimizers
+    optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
+    optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
 
-# Loss function
-adversarial_loss = torch.nn.BCELoss()
+    # ----------
+    #  Training
+    # ----------
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    train_iterator, test_iterator = data.BucketIterator.splits(
+        (train, val),
+        batch_size=batch_size,
+        device=device
+    )
 
-# Optimizers
-optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
-optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
+    print('start training...')
+    for epoch in range(n_epochs):
+        for i, (text, image) in enumerate(train_iterator):
 
-# ----------
-#  Training
-# ----------
-for epoch in range(args.n_epochs):
-    for i, (images, targets) in enumerate(data_loader):
-        # Adversarial ground truths
-        valid = Variable(Tensor(images.shape[0], 1).fill_(1.0), requires_grad=False)
-        fake = Variable(Tensor(images.shape[0], 1).fill_(0.0), requires_grad=False)
+            # Adversarial ground truths
+            batch_size = len(image)
+            valid = torch.ones(size=torch.Size([batch_size, 1]), dtype=torch.float32)
+            fake = torch.zeros(size=torch.Size([batch_size, 1]), dtype=torch.float32)
 
-        # Configure input
-        real_images = Variable(imgs.type(Tensor))
+            # real-images
+            real_images = torch.stack(image)
 
-        # text-embedding
-        text_embedding = text_encoder(targets)
+            # text-embedding
+            idx = np.random.randint(5)
+            text_embedding = text_encoder(text[:, idx, :])
+            text_embedding = text_embedding[:, -1].unsqueeze(2).unsqueeze(3)
+            text_embedding = text_embedding.detach()
 
-        # -----------------
-        #  Train Generator
-        # -----------------
+            # -----------------
+            #  Train Generator
+            # -----------------
 
-        # generate fake images with text-embedding
-        gen_images = generator(text_embedding)
-        validity = discriminator(gen_images)
-        g_loss = adversarial_loss(validity, valid)
-        g_loss.backward()
-        optimizer_G.step()
+            optimizer_G.zero_grad()
 
-        # ---------------------
-        #  Train Discriminator
-        # ---------------------
+            # generate fake images with text-embedding
+            gen_images = generator(text_embedding)
 
-        optimizer_D.zero_grad()
+            # Loss measures generator's ability to fool the discriminator
+            validity = discriminator(gen_images, text_embedding)
+            g_loss = adversarial_loss(validity, valid)
+            g_loss.backward()
+            optimizer_G.step()
 
-        # TODO: Image embedding
+            # ---------------------
+            #  Train Discriminator
+            # ---------------------
 
-        # Loss for real images
-        validity_real = discriminator(real_images, text_embedding)
-        d_real_loss = adversarial_loss(validity_real, valid)
+            optimizer_D.zero_grad()
 
-        # Loss for fake images
-        validity_fake = discriminator(gen_images.detach(), text_embedding)
-        d_fake_loss = adversarial_loss(validity_fake, fake)
+            # loss for (real-image, real-text), (fake-image, real-text), (wrong-image, real-text)
+            validity_real = discriminator(real_images, text_embedding)
+            d_real_loss = adversarial_loss(validity_real, valid)
 
-        # TODO: Loss for interpolated samples
+            validity_fake = discriminator(gen_images.detach(), text_embedding)
+            d_fake_loss = adversarial_loss(validity_fake, fake)
 
-        # Total discriminator loss
-        d_loss = (d_real_loss + d_fake_loss) / 2
-        d_loss.backward()
-        optimizer_D.step()
-        print(
-            "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-            % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
-        )
+            d_loss = (d_real_loss + d_fake_loss) / 2
+            d_loss.backward()
+            optimizer_D.step()
 
-        batches_done = epoch * len(dataloader) + i
-        if batches_done % opt.sample_interval == 0:
-            sample_image(n_row=10, batches_done=batches_done)
+            print(
+                "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+                % (epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
+            )
+
+            batches_done = epoch * len(train_iterator) + i
+            if batches_done % args.sample_interval == 0:
+                save_image(gen_images.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+
+        for (model, path) in pairs:
+            torch.save(model.state_dict(), path)

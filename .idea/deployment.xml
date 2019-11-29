@@ -7,6 +7,11 @@
           <mappings>
             <mapping deploy="/mbs0221/projects/Text2Image-Synthesis" local="$PROJECT_DIR$" web="/" />
           </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/.ipynb_checkpoints" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.github" />
+          </excludedPaths>
         </serverdata>
       </paths>
     </serverData>
