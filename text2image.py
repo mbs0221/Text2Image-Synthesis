@@ -20,6 +20,8 @@ from torchvision import datasets
 from torchvision import transforms
 from torchvision.datasets import Flickr8k
 from torchvision.datasets.vision import StandardTransform
+from torchvision.utils import save_image
+
 from modal import MBSGenerator, ZQHDiscriminator, Attn, TextEncoder
 
 
@@ -196,6 +198,10 @@ if __name__ == '__main__':
             model.load_state_dict(torch.load(path))
         else:
             model.apply(weights_init_normal)
+
+    # create image folder
+    if os.path.exists('./images'):
+        os.mkdir('./images')
 
     # loss function
     adversarial_loss = torch.nn.BCELoss()
