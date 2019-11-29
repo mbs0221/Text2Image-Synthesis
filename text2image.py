@@ -200,7 +200,7 @@ if __name__ == '__main__':
             model.apply(weights_init_normal)
 
     # create image folder
-    if os.path.exists('./images'):
+    if not os.path.exists('./images'):
         os.mkdir('./images')
 
     # loss function
