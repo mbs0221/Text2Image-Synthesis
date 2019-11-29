@@ -2,20 +2,25 @@ import argparse
 import cv2
 import os
 import numpy as np
+
+from PIL import Image
+
 import torch.nn.functional as F
 import torch
 from torch import nn
+from torch.nn import init
 from torch.utils.data import DataLoader
-from torchtext import data
-from torchvision import datasets
-from torchtext.vocab import Vectors, GloVe
-import torchvision.models as models
-from torchvision import transforms
-from torchvision.datasets import Flickr8k, CocoCaptions
 
-from generator import Generator
-from discriminator import Discriminator
-from text_encoder import TextEncoder
+from torchtext import data
+from torchtext.vocab import Vectors, GloVe
+from torchtext.data import Example
+
+import torchvision.models as models
+from torchvision import datasets
+from torchvision import transforms
+from torchvision.datasets import Flickr8k
+from torchvision.datasets.vision import StandardTransform
+from modal import Generator, Discriminator, Attn, TextEncoder
 
 
 class CALayer(nn.Module):
@@ -111,6 +116,8 @@ def weights_init_normal(m):
         torch.nn.init.constant_(m.bias.data, 0.0)
 
 
+cuda = True if torch.cuda.is_available() else False
+
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
@@ -159,7 +166,6 @@ if __name__ == '__main__':
     TEXT.vocab.vectors.unk_init = init.xavier_uniform
 
     # build vocabulary from dataset
-
     embedding = TEXT.vocab.vectors
     vocab_size, embedding_dim = embedding.shape
     PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
@@ -188,6 +194,13 @@ if __name__ == '__main__':
 
     # loss function
     adversarial_loss = torch.nn.BCELoss()
+
+    # cuda
+    if cuda:
+        text_encoder.cuda()
+        generator.cuda()
+        discriminator.cuda()
+        adversarial_loss.cuda()
 
     # optimizers
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr, betas=(args.b1, args.b2))

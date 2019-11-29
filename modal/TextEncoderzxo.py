@@ -10,25 +10,28 @@ from torchvision.transforms import transforms
 from torchtext import data
 import torch.nn.functional as F
 
+
 class Attn(nn.Module):
     def __init__(self, hidden_dim, kqv_dim):
         super(Attn, self).__init__()
-        self.wk = nn.Linear(hidden_dim,  kqv_dim)
-        self.wq = nn.Linear(hidden_dim,kqv_dim)
+        self.wk = nn.Linear(hidden_dim, kqv_dim)
+        self.wq = nn.Linear(hidden_dim, kqv_dim)
         self.wv = nn.Linear(hidden_dim, kqv_dim)
-        self.d = kqv_dim**0.5
+        self.d = kqv_dim ** 0.5
 
     def forward(self, input):
         k = self.wk(input)
         q = self.wq(input)
         v = self.wv(input)
-        w = F.softmax(torch.bmm(q, k.transpose(-1, -2))/self.d, dim=-1)
+        w = F.softmax(torch.bmm(q, k.transpose(-1, -2)) / self.d, dim=-1)
         attn = torch.bmm(w, v)
 
         return attn
 
-class TextEncoder(nn.Module):
-    def __init__(self, vocab_size, emb_dim, hidden_size, weight, kqv_dim, rnn_type='gru', bidirectional=False, batch_first=False, padding_idx=None):
+
+class ZXO_TextEncoder(nn.Module):
+    def __init__(self, vocab_size, emb_dim, hidden_size, weight, kqv_dim, rnn_type='gru', bidirectional=False,
+                 batch_first=False, padding_idx=None):
         super(TextEncoder, self).__init__()
         self.embed = nn.Embedding(vocab_size, embedding_dim=emb_dim, _weight=weight)
         if rnn_type == 'rnn':
@@ -40,7 +43,6 @@ class TextEncoder(nn.Module):
 
         self.attn = Attn(emb_dim, kqv_dim)
         self.linear = nn.Linear(emb_dim, 2)
-
 
     def forward(self, input_ids):
         output = self.embed(input_ids)
@@ -74,6 +76,7 @@ def load_glove(worddict, file_path):
 
     return embedding_matrix
 
+
 def ConstructWordDict(text_list):
     worddict = {
         '_PAD_': 0,
@@ -89,6 +92,7 @@ def ConstructWordDict(text_list):
                     dictnum = dictnum + 1
 
     return worddict
+
 
 if __name__ == '__main__':
 
@@ -111,7 +115,7 @@ if __name__ == '__main__':
 
     print(embedding_matrix.shape)
     kqv_dim = 128
-    text_encoder = TextEncoder(num_words, num_features, 64, embedding_matrix, kqv_dim)
+    text_encoder = ZXO_TextEncoder(num_words, num_features, 64, embedding_matrix, kqv_dim)
     print(text_encoder)
 
     """
