@@ -4,7 +4,7 @@ from torch.autograd import Variable
 
 
 class TVLoss(nn.Module):
-    def __init__(self, weight=1.):
+    def __init__(self, weight=0.2):
         super(TVLoss, self).__init__()
         self.weight = weight
 

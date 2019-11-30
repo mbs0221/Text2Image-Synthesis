@@ -127,7 +127,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', default=32, type=int, help='the training epochs')
     parser.add_argument('--n_epochs', default=100, type=int, help='the training epochs')
-    parser.add_argument("--lr", type=float, default=0.002, help="adam: learning rate")
+    parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
     parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
     parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
     parser.add_argument('--latent_dim', default=48, type=int, help='the dimensional of latent space')
@@ -225,7 +225,8 @@ if __name__ == '__main__':
     train_iterator, test_iterator = data.BucketIterator.splits(
         (train, val),
         batch_size=batch_size,
-        device=device
+        device=device,
+        repeat=False
     )
 
     print('start training...')
