@@ -125,6 +125,7 @@ cuda = True if torch.cuda.is_available() else False
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument('--root', default='../datasets/coco-2014/', type=str, help='coco-dataset folder')
     parser.add_argument('--batch_size', default=32, type=int, help='the training epochs')
     parser.add_argument('--n_epochs', default=100, type=int, help='the training epochs')
     parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
@@ -143,6 +144,7 @@ if __name__ == '__main__':
     parser.add_argument("--sample_interval", type=int, default=60, help="interval between image sampling")
     args = parser.parse_args()
 
+    root = args.root
     batch_size = args.batch_size
     n_epochs = args.n_epochs
     latent_dim = args.latent_dim
@@ -159,7 +161,6 @@ if __name__ == '__main__':
     glove = GloVe(name='6B', dim=100)
 
     # COCO-dataset
-    root = "../datasets/coco-2014/"
     print('load coco-caption')
     IMAGE = data.RawField(is_target=True)
     field = data.Field(sequential=True, lower=True)
