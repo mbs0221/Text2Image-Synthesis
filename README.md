@@ -1,23 +1,25 @@
 # Text2Image-Synthesis
 C-GAN, TextEncoder, COCO-2014
 
-Install Axel Download Accelerator
+Install axel download accelerator
 ~~~
 $ sudo apt-get install axel
+$ axel -n 10 http://images.cocodataset.org/zips/train2014.zip
+$ axel -n 10 http://images.cocodataset.org/zips/val2014.zip
+$ axel -n 10 http://images.cocodataset.org/zips/test2014.zip
+$ axel -n 10 http://images.cocodataset.org/annotations/annotations_trainval2014.zip
+$ axel -n 10 http://images.cocodataset.org/annotations/image_info_test2014.zip
 ~~~
-Uncompress files
+Create folders
 ~~~
 $ mkdir coco-2014
 $ mkdir coco-2014/images/
-$ unzip train2014.zip coco-2014/images/
-$ unzip val2014.zip coco-2014/images/
-$ unzip test2014.zip coco-2014/images/
+$ mkdir coco-2014/resized/
 $ mkdir coco-2014/annotations/
-$ unzip annotations_trainval2014.zip coco-2014/annotations/
-$ unzip image_info_test2014.zip coco-2014/annotations/
 ~~~
 Run python script
 ~~~
 $ pip3 install -r requirements.txt
-$ python3 text2image.py
+$ python3 utils/resize_image.py --source=coco-2014/images --target=coco-2014/resized/
+$ python3 text2image.py --root=coco-2014
 ~~~
