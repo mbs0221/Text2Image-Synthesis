@@ -89,11 +89,11 @@ class CocoCaptions(data.Dataset):
             target = [ann['caption'] for ann in anns]
             # real-image
             path = coco.loadImgs(img_id)[0]['file_name']
-            real_image = Image.open(os.path.join(self.path, path)).convert('RGB')
+            img = Image.open(os.path.join(self.path, path)).convert('RGB')
             if self.transforms is not None:
-                real_image = self.transforms(real_image, target)
+                img, target = self.transforms(img, target)
 
-            examples.append(Example.fromlist([real_image, target], fields))
+            examples.append(Example.fromlist([img, target], fields))
         super(CocoCaptions, self).__init__(examples, fields)
 
 
