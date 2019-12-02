@@ -7,6 +7,7 @@ from PIL import Image
 
 import torch.nn.functional as F
 import torch
+from numpy.core._multiarray_umath import ndarray
 from torch import nn
 from torch.nn import init
 from torch.utils.data import DataLoader
@@ -76,6 +77,7 @@ class CocoCaptions(data.Dataset):
         from pycocotools.coco import COCO
         self.coco = COCO(ann_path)
         self.ids = list(sorted(self.coco.imgs.keys()))
+
         # collect examples
         coco = self.coco
         fields = [('image', image_field), ('text', text_field)]
@@ -85,13 +87,13 @@ class CocoCaptions(data.Dataset):
             ann_ids = coco.getAnnIds(imgIds=img_id)
             anns = coco.loadAnns(ann_ids)
             target = [ann['caption'] for ann in anns]
-            # image
+            # real-image
             path = coco.loadImgs(img_id)[0]['file_name']
-            img = Image.open(os.path.join(self.path, path)).convert('RGB')
+            real_image = Image.open(os.path.join(self.path, path)).convert('RGB')
             if self.transforms is not None:
-                img, target = self.transforms(img, target)
+                real_image = self.transforms(real_image, target)
 
-            examples.append(Example.fromlist([img, target], fields))
+            examples.append(Example.fromlist([real_image, target], fields))
         super(CocoCaptions, self).__init__(examples, fields)
 
 
@@ -120,7 +122,7 @@ def weights_init_normal(m):
         torch.nn.init.constant_(m.bias.data, 0.0)
 
 
-cuda = True if torch.cuda.is_available() else False
+has_cuda = True if torch.cuda.is_available() else False
 
 if __name__ == '__main__':
     # parse arguments
@@ -141,7 +143,8 @@ if __name__ == '__main__':
     parser.add_argument('--ngf', default=24, type=int, help='Size of feature maps in generator')
     parser.add_argument('--ndf', default=24, type=int, help='Size of feature maps in discriminator')
     parser.add_argument('--num_workers', default=1, type=int, help='The number of running threads')
-    parser.add_argument("--sample_interval", type=int, default=60, help="interval between image sampling")
+    parser.add_argument('--sample_interval', type=int, default=60, help="interval between image sampling")
+    parser.add_argument('--use_cuda', type=bool, default=False, help='use cuda for training')
     args = parser.parse_args()
 
     root = args.root
@@ -206,10 +209,12 @@ if __name__ == '__main__':
 
     # loss function
     adversarial_loss = torch.nn.BCELoss()
+    l1_loss = torch.nn.L1Loss()
     tv_loss = TVLoss()
 
-    # cuda
-    if cuda:
+    # CUDA
+    cuda_enable = has_cuda and args.use_cuda
+    if cuda_enable:
         text_encoder.cuda()
         generator.cuda()
         discriminator.cuda()
@@ -222,7 +227,7 @@ if __name__ == '__main__':
     # ----------
     #  Training
     # ----------
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if cuda_enable else 'cpu')
     train_iterator, test_iterator = data.BucketIterator.splits(
         (train, val),
         batch_size=batch_size,
@@ -236,13 +241,22 @@ if __name__ == '__main__':
 
             # Adversarial ground truths
             batch_size = len(image)
-            valid = torch.ones(size=torch.Size([batch_size, 1]), dtype=torch.float32)
-            fake = torch.zeros(size=torch.Size([batch_size, 1]), dtype=torch.float32)
+            valid_labels = torch.ones(size=torch.Size([batch_size, 1]), dtype=torch.float32)
+            fake_labels = torch.zeros(size=torch.Size([batch_size, 1]), dtype=torch.float32)
 
             # real-images
             real_images = torch.stack(image)
 
-            # text-embedding
+            # miss-match images
+            ids = np.arange(0, batch_size, 1)
+            _ids = np.random.permutation(ids)
+            wrong_images = real_images[_ids]
+            match_labels = torch.from_numpy((ids == _ids).astype(int))
+
+            # -----------------
+            #  Text-Embedding
+            # -----------------
+
             idx = np.random.randint(5)
             text_embedding = text_encoder(text[:, idx, :])
             text_embedding = text_embedding[:, -1].unsqueeze(2).unsqueeze(3)
@@ -259,7 +273,7 @@ if __name__ == '__main__':
 
             # Loss measures generator's ability to fool the discriminator
             validity = discriminator(gen_images, text_embedding)
-            g_loss = adversarial_loss(validity, valid) + tv_loss(gen_images)
+            g_loss = adversarial_loss(validity, valid) + l1_loss(gen_images, image) + tv_loss(gen_images)
             g_loss.backward()
             optimizer_G.step()
 
@@ -269,15 +283,21 @@ if __name__ == '__main__':
 
             optimizer_D.zero_grad()
 
-            # loss for (real-image, real-text), (fake-image, real-text), (wrong-image, real-text)
+            # loss for exact-match (real-image, real-text)
             validity_real = discriminator(real_images, text_embedding)
-            d_real_loss = adversarial_loss(validity_real, valid)
+            d_real_loss = adversarial_loss(validity_real, valid_labels)
 
+            # loss for miss-match (fake-image, real-text)
             validity_fake = discriminator(gen_images.detach(), text_embedding)
-            d_fake_loss = adversarial_loss(validity_fake, fake)
+            d_fake_loss = adversarial_loss(validity_fake, fake_labels)
 
-            d_loss = (d_real_loss + d_fake_loss) / 2
+            # loss for miss-match (wrong-image, real-text)
+            validity_match = discriminator(wrong_images, text_embedding)
+            d_match_loss = adversarial_loss(validity_match, match_labels)
+
+            d_loss = (d_real_loss + d_fake_loss + d_match_loss) / 3
             d_loss.backward()
+
             optimizer_D.step()
 
             print(
