@@ -273,7 +273,7 @@ if __name__ == '__main__':
 
             # Loss measures generator's ability to fool the discriminator
             validity = discriminator(gen_images, text_embedding)
-            g_loss = adversarial_loss(validity, valid_labels) + l1_loss(gen_images, image) + tv_loss(gen_images)
+            g_loss = adversarial_loss(validity, valid_labels) + l1_loss(gen_images, real_images) + tv_loss(gen_images)
             g_loss.backward()
             optimizer_G.step()
 
