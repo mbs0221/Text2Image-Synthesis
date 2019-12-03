@@ -251,7 +251,7 @@ if __name__ == '__main__':
             ids = np.arange(0, batch_size, 1)
             _ids = np.random.permutation(ids)
             wrong_images = real_images[_ids]
-            match_labels = torch.from_numpy((ids == _ids).astype(float)).type(torch.float32)
+            match_labels = torch.from_numpy(ids == _ids).type(torch.float32)
 
             # -----------------
             #  Text-Embedding
