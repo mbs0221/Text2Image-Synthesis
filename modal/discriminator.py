@@ -112,4 +112,4 @@ class MBSDiscriminator(nn.Module):
         image_embedding = self.extractor64(image)
         text_embedding = text.repeat(1, 1, 4, 4)
         embedding = torch.cat([image_embedding, text_embedding], dim=1)
-        return self.discriminator(embedding)
+        return self.discriminator(embedding).squeeze()

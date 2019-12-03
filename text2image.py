@@ -241,8 +241,8 @@ if __name__ == '__main__':
 
             # Adversarial ground truths
             batch_size = len(image)
-            valid_labels = torch.ones(size=torch.Size([batch_size, 1]), dtype=torch.float32)
-            fake_labels = torch.zeros(size=torch.Size([batch_size, 1]), dtype=torch.float32)
+            valid_labels = torch.ones(size=torch.Size([batch_size]), dtype=torch.float32)
+            fake_labels = torch.zeros(size=torch.Size([batch_size]), dtype=torch.float32)
 
             # real-images
             real_images = torch.stack(image)
