@@ -8,23 +8,18 @@ from PIL import Image
 
 import torch.nn.functional as F
 import torch
-from numpy.core._multiarray_umath import ndarray
 from torch import nn
 from torch.nn import init
 from torch.utils.data import DataLoader
 
 from torchtext import data
 from torchtext.vocab import Vectors, GloVe
-from torchtext.data import Example
 
 import torchvision.models as models
-from torchvision import datasets
-from torchvision import transforms
-from torchvision.datasets import Flickr8k
-from torchvision.datasets.vision import StandardTransform
 from torchvision.utils import save_image
 
 from modal import MBSGenerator, ZQHDiscriminator, MBSDiscriminator, Attn, TextEncoder, TVLoss
+from utils import datasets
 
 
 class CALayer(nn.Module):
@@ -43,60 +38,6 @@ class CALayer(nn.Module):
         z_var = self.var(x)
         y = torch.normal(z_mean, z_var)
         return y.unsqueeze(2).unsqueeze(3)
-
-
-def get_dataset(path, ann_path, text_field, transforms=None, transform=None, target_transform=None):
-    # for vision data
-    has_transforms = transforms is not None
-    has_separate_transform = transform is not None or target_transform is not None
-    if has_transforms and has_separate_transform:
-        raise ValueError("Only transforms or transform/target_transform can "
-                         "be passed as argument")
-
-    transform = transform
-    target_transform = target_transform
-
-    if has_separate_transform:
-        transforms = StandardTransform(transform, target_transform)
-    transforms = transforms
-
-    # for text data
-    from pycocotools.coco import COCO
-    coco = COCO(ann_path)
-    ids = list(sorted(coco.imgs.keys()))
-
-    # define fields
-    image_field = data.RawField(is_target=True)
-    fields = [('text', text_field), ('image', image_field)]
-
-    # collect examples
-    examples = []
-    for img_id in ids:
-        # text
-        ann_ids = coco.getAnnIds(imgIds=img_id)
-        anns = coco.loadAnns(ann_ids)
-        captions = [ann['caption'] for ann in anns]
-        # real-image
-        img_path = coco.loadImgs(img_id)[0]['file_name']
-        img = Image.open(os.path.join(path, img_path)).convert('RGB')
-        if transforms is not None:
-            img, captions = transforms(img, captions)
-
-        examples.append(Example.fromlist([captions, img], fields))
-    return examples, fields
-
-
-def coco_caption(path, type, nested_field):
-    examples, fields = get_dataset(
-        path=f"{path}/resized/{type}2014",
-        ann_path=f"{path}/annotations/captions_{type}2014.json",
-        text_field=nested_field,
-        transform=transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize([0.5], [0.5])
-        ])
-    )
-    return data.Dataset(examples, fields)
 
 
 def weights_init_normal(m):
@@ -172,8 +113,8 @@ if __name__ == '__main__':
     print('load coco-caption')
     field = data.Field(sequential=True, lower=True)
     TEXT = data.NestedField(field, use_vocab=True)
-    train = coco_caption(root, 'train', TEXT)
-    val = coco_caption(root, 'val', TEXT)
+    train = datasets.coco_caption(root, 'train', TEXT)
+    val = datasets.coco_caption(root, 'val', TEXT)
 
     print('build vocabulary from dataset')
     TEXT.build_vocab(train, val, vectors=glove)
