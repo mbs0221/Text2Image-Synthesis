@@ -236,7 +236,7 @@ if __name__ == '__main__':
         repeat=False
     )
 
-    print(f'start training at: {time.clock()}')
+    print(f'start training at: {time.asctime()}')
     for epoch in range(n_epochs):
         for i, (text, image) in enumerate(train_iterator):
 
@@ -302,8 +302,8 @@ if __name__ == '__main__':
             optimizer_D.step()
 
             print(
-                "[%.6f][Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-                % (time.clock(), epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
+                "[%s][Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+                % (time.asctime(), epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
             )
 
             batches_done = epoch * len(train_iterator) + i
