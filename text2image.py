@@ -4,8 +4,6 @@ import os
 import numpy as np
 import time
 
-from PIL import Image
-
 import torch.nn.functional as F
 import torch
 from torch import nn
@@ -126,12 +124,9 @@ if __name__ == '__main__':
     PAD_IDX = TEXT.vocab.stoi[TEXT.pad_token]
 
     # define modules
-    print('construct text-encoder, ca-layer, generator')
+    print('construct text-encoder, generator, discriminator')
     text_encoder = TextEncoder(vocab_size, embedding_dim, text_dim, kqv_dim, embedding, padding_idx=PAD_IDX)
-    generator = nn.Sequential(
-        CALayer(text_dim, cond_dim),
-        MBSGenerator(latent_dim, cond_dim, ngf, n_channels)
-    )
+    generator = MBSGenerator(latent_dim, text_dim, ngf, n_channels)
     discriminator = MBSDiscriminator(ndf, text_dim, n_channels)
     # discriminator = QHDiscriminator(text_dim, text_reduced_dim)
 

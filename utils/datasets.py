@@ -1,3 +1,7 @@
+import os
+
+from PIL import Image
+
 from torchtext import data
 from torchtext.data import Example
 
