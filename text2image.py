@@ -45,63 +45,49 @@ class CALayer(nn.Module):
         return y.unsqueeze(2).unsqueeze(3)
 
 
-class CocoCaptions(data.Dataset):
-    urls = [
-        'http://images.cocodataset.org/zips/train2014.zip',
-        'http://images.cocodataset.org/zips/val2014.zip',
-        'http://images.cocodataset.org/zips/test2014.zip',
-        'http://images.cocodataset.org/annotations/annotations_trainval2014.zip',
-        'http://images.cocodataset.org/annotations/image_info_test2014.zip'
-    ]
-    name = 'coco'
-    dirname = 'coco-2014'
+def get_dataset(path, ann_path, text_field, transforms=None, transform=None, target_transform=None):
+    # for vision data
+    has_transforms = transforms is not None
+    has_separate_transform = transform is not None or target_transform is not None
+    if has_transforms and has_separate_transform:
+        raise ValueError("Only transforms or transform/target_transform can "
+                         "be passed as argument")
 
-    def __init__(self, path, ann_path, text_field, transforms=None, transform=None, target_transform=None,
-                 **kwargs):
-        self.path = path
-        # for vision data
-        has_transforms = transforms is not None
-        has_separate_transform = transform is not None or target_transform is not None
-        if has_transforms and has_separate_transform:
-            raise ValueError("Only transforms or transform/target_transform can "
-                             "be passed as argument")
+    transform = transform
+    target_transform = target_transform
 
-        # for backwards-compatibility
-        self.transform = transform
-        self.target_transform = target_transform
+    if has_separate_transform:
+        transforms = StandardTransform(transform, target_transform)
+    transforms = transforms
 
-        if has_separate_transform:
-            transforms = StandardTransform(transform, target_transform)
-        self.transforms = transforms
+    # for text data
+    from pycocotools.coco import COCO
+    coco = COCO(ann_path)
+    ids = list(sorted(coco.imgs.keys()))
 
-        # for text data
-        from pycocotools.coco import COCO
-        coco = COCO(ann_path)
-        ids = list(sorted(coco.imgs.keys()))
+    # define fields
+    image_field = data.RawField(is_target=True)
+    fields = [('text', text_field), ('image', image_field)]
 
-        # define fields
-        image_field = data.RawField(is_target=True)
-        fields = [('text', text_field), ('image', image_field)]
+    # collect examples
+    examples = []
+    for img_id in ids:
+        # text
+        ann_ids = coco.getAnnIds(imgIds=img_id)
+        anns = coco.loadAnns(ann_ids)
+        captions = [ann['caption'] for ann in anns]
+        # real-image
+        img_path = coco.loadImgs(img_id)[0]['file_name']
+        img = Image.open(os.path.join(path, img_path)).convert('RGB')
+        if transforms is not None:
+            img, captions = transforms(img, captions)
 
-        # collect examples
-        examples = []
-        for img_id in ids:
-            # text
-            ann_ids = coco.getAnnIds(imgIds=img_id)
-            anns = coco.loadAnns(ann_ids)
-            captions = [ann['caption'] for ann in anns]
-            # real-image
-            path = coco.loadImgs(img_id)[0]['file_name']
-            img = Image.open(os.path.join(self.path, path)).convert('RGB')
-            if self.transforms is not None:
-                img, captions = self.transforms(img, captions)
-
-            examples.append(Example.fromlist([captions, img], fields))
-        super(CocoCaptions, self).__init__(examples, fields)
+        examples.append(Example.fromlist([captions, img], fields))
+    return examples, fields
 
 
-def coco_captions(path, type, nested_field):
-    dataset = CocoCaptions(
+def coco_caption(path, type, nested_field):
+    examples, fields = get_dataset(
         path=f"{path}/resized/{type}2014",
         ann_path=f"{path}/annotations/captions_{type}2014.json",
         text_field=nested_field,
@@ -110,7 +96,7 @@ def coco_captions(path, type, nested_field):
             transforms.Normalize([0.5], [0.5])
         ])
     )
-    return dataset
+    return data.Dataset(examples, fields)
 
 
 def weights_init_normal(m):
@@ -186,8 +172,8 @@ if __name__ == '__main__':
     print('load coco-caption')
     field = data.Field(sequential=True, lower=True)
     TEXT = data.NestedField(field, use_vocab=True)
-    train = coco_captions(root, 'train', TEXT)
-    val = coco_captions(root, 'val', TEXT)
+    train = coco_caption(root, 'train', TEXT)
+    val = coco_caption(root, 'val', TEXT)
 
     print('build vocabulary from dataset')
     TEXT.build_vocab(train, val, vectors=glove)
@@ -320,7 +306,7 @@ if __name__ == '__main__':
             optimizer_D.step()
 
             print(
-                "[%s][Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+                "[%s][Epoch %3d/%d] [Batch %4d/%4d] [D loss: %f] [G loss: %f]"
                 % (time.asctime(), epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
             )
 
