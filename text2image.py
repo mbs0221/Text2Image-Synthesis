@@ -56,7 +56,7 @@ class CocoCaptions(data.Dataset):
     name = 'coco'
     dirname = 'coco-2014'
 
-    def __init__(self, path, ann_path, image_field, text_field, transforms=None, transform=None, target_transform=None,
+    def __init__(self, path, ann_path, text_field, transforms=None, transform=None, target_transform=None,
                  **kwargs):
         self.path = path
         # for vision data
@@ -76,34 +76,35 @@ class CocoCaptions(data.Dataset):
 
         # for text data
         from pycocotools.coco import COCO
-        self.coco = COCO(ann_path)
-        self.ids = list(sorted(self.coco.imgs.keys()))
+        coco = COCO(ann_path)
+        ids = list(sorted(coco.imgs.keys()))
+
+        # define fields
+        image_field = data.RawField(is_target=True)
+        fields = [('text', text_field), ('image', image_field)]
 
         # collect examples
-        coco = self.coco
-        fields = [('image', image_field), ('text', text_field)]
         examples = []
-        for img_id in self.ids:
+        for img_id in ids:
             # text
             ann_ids = coco.getAnnIds(imgIds=img_id)
             anns = coco.loadAnns(ann_ids)
-            target = [ann['caption'] for ann in anns]
+            captions = [ann['caption'] for ann in anns]
             # real-image
             path = coco.loadImgs(img_id)[0]['file_name']
             img = Image.open(os.path.join(self.path, path)).convert('RGB')
             if self.transforms is not None:
-                img, target = self.transforms(img, target)
+                img, captions = self.transforms(img, captions)
 
-            examples.append(Example.fromlist([img, target], fields))
+            examples.append(Example.fromlist([captions, img], fields))
         super(CocoCaptions, self).__init__(examples, fields)
 
 
-def coco_captions(path, type, nested_field, image_field):
+def coco_captions(path, type, nested_field):
     dataset = CocoCaptions(
         path=f"{path}/resized/{type}2014",
         ann_path=f"{path}/annotations/captions_{type}2014.json",
         text_field=nested_field,
-        image_field=image_field,
         transform=transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5])
@@ -183,11 +184,10 @@ if __name__ == '__main__':
 
     # COCO-dataset
     print('load coco-caption')
-    IMAGE = data.RawField(is_target=True)
     field = data.Field(sequential=True, lower=True)
     TEXT = data.NestedField(field, use_vocab=True)
-    train = coco_captions(root, 'train', TEXT, IMAGE)
-    val = coco_captions(root, 'val', TEXT, IMAGE)
+    train = coco_captions(root, 'train', TEXT)
+    val = coco_captions(root, 'val', TEXT)
 
     print('build vocabulary from dataset')
     TEXT.build_vocab(train, val, vectors=glove)
