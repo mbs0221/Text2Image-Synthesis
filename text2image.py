@@ -123,6 +123,22 @@ def weights_init_normal(m):
         torch.nn.init.constant_(m.bias.data, 0.0)
 
 
+def write_log(path, batch, text, vocab):
+    # get captions
+    captions = []
+    for item in text:
+        caption = []
+        for word in item:
+            if word == 1:
+                break
+            caption.append(vocab.itos[word])
+        captions.append(" ".join(caption) + '\n')
+    # write file
+    with open(path, 'a+') as f:
+        f.write(f'batch-done: {batch}\n')
+        f.writelines(captions)
+
+
 has_cuda = True if torch.cuda.is_available() else False
 
 if __name__ == '__main__':
@@ -146,6 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', default=1, type=int, help='The number of running threads')
     parser.add_argument('--sample_interval', type=int, default=60, help="interval between image sampling")
     parser.add_argument('--use_cuda', type=bool, default=False, help='use cuda for training')
+    parser.add_argument('--log_path', type=str, default='./log.txt', help='generating log')
     args = parser.parse_args()
 
     root = args.root
@@ -259,7 +276,8 @@ if __name__ == '__main__':
             # -----------------
 
             idx = np.random.randint(5)
-            text_embedding = text_encoder(text[:, idx, :])
+            texts = text[:, idx, :]
+            text_embedding = text_encoder(texts)
             text_embedding = text_embedding[:, -1].unsqueeze(2).unsqueeze(3)
             text_embedding = text_embedding.detach()
 
@@ -309,6 +327,7 @@ if __name__ == '__main__':
             batches_done = epoch * len(train_iterator) + i
             if batches_done % args.sample_interval == 0:
                 save_image(gen_images.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+                write_log(args.log_path, batches_done, texts, TEXT.vocab)
 
         for (model, path) in pairs:
             torch.save(model.state_dict(), path)
