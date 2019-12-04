@@ -2,6 +2,7 @@ import argparse
 import cv2
 import os
 import numpy as np
+import time
 
 from PIL import Image
 
@@ -235,7 +236,7 @@ if __name__ == '__main__':
         repeat=False
     )
 
-    print('start training...')
+    print(f'start training at: {time.clock()}')
     for epoch in range(n_epochs):
         for i, (text, image) in enumerate(train_iterator):
 
@@ -301,8 +302,8 @@ if __name__ == '__main__':
             optimizer_D.step()
 
             print(
-                "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
-                % (epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
+                "[%.6f][Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
+                % (time.clock(), epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
             )
 
             batches_done = epoch * len(train_iterator) + i
