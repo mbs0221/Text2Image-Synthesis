@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     # COCO-dataset
     print('load coco-caption')
-    field = data.Field(sequential=True, lower=True)
+    field = data.Field(sequential=True, tokenize=data.get_tokenizer(tokenizer='basic_english'), lower=True)
     TEXT = data.NestedField(field, use_vocab=True)
     train = datasets.coco_caption(root, 'train', TEXT)
     val = datasets.coco_caption(root, 'val', TEXT)
