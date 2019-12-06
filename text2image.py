@@ -158,6 +158,8 @@ if __name__ == '__main__':
         text_encoder.cuda()
         generator.cuda()
         discriminator.cuda()
+        l1_loss.cuda()
+        tv_loss.cuda()
         adversarial_loss.cuda()
 
     # optimizers
@@ -192,6 +194,11 @@ if __name__ == '__main__':
             _ids = np.random.permutation(ids)
             wrong_images = real_images[_ids]
             match_labels = torch.from_numpy(ids == _ids).type(torch.float32)
+
+            if cuda_enable:
+                valid_labels = valid_labels.cuda()
+                fake_labels = fake_labels.cuda()
+                match_labels.cuda()
 
             # -----------------
             #  Text-Embedding
