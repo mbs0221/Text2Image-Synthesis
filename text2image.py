@@ -196,8 +196,8 @@ if __name__ == '__main__':
             match_labels = torch.from_numpy(ids == _ids).type(torch.float32)
 
             if cuda_enable:
-                valid_labels = valid_labels.cuda()
-                fake_labels = fake_labels.cuda()
+                valid_labels.cuda()
+                fake_labels.cuda()
                 match_labels.cuda()
 
             # -----------------
