@@ -172,6 +172,7 @@ if __name__ == '__main__':
         (train),
         batch_size=batch_size,
         device=device,
+        sort_key=lambda x: len(x.text),
         repeat=False
     )
 
