@@ -49,9 +49,6 @@ def get_dataset(path, ann_path, text_field, transforms=None, transform=None, tar
             img, captions = transforms(img, captions)
         examples.append(Example.fromlist([captions, img], fields))
 
-        if len(examples) == 20000:
-            break
-
     return examples, fields
 
 
