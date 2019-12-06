@@ -183,13 +183,20 @@ if __name__ == '__main__':
     for epoch in range(n_epochs):
         for i, (text, image) in enumerate(train_iterator):
 
-            # Adversarial ground truths
             batch_size = len(image)
+            # adversarial ground truths
             valid_labels = torch.ones(size=torch.Size([batch_size]), dtype=torch.float32)
             fake_labels = torch.zeros(size=torch.Size([batch_size]), dtype=torch.float32)
 
             # real-images
             real_images = torch.stack(image)
+
+            # real-texts
+            idx = np.random.randint(5)
+            texts = text[:, idx, :]
+
+            # random noise
+            z = torch.randn(size=(batch_size, latent_dim, 1, 1))
 
             # miss-match images
             ids = np.arange(0, batch_size, 1)
@@ -197,7 +204,12 @@ if __name__ == '__main__':
             wrong_images = real_images[_ids]
             match_labels = torch.from_numpy(ids == _ids).type(torch.float32)
 
+            # convert to CUDA variable
             if cuda_enable:
+                texts.cuda(cuda_id)
+                z.cuda(cuda_id)
+                real_images.cuda(cuda_id)
+                wrong_images.cuda(cuda_id)
                 valid_labels.cuda(cuda_id)
                 fake_labels.cuda(cuda_id)
                 match_labels.cuda(cuda_id)
@@ -206,9 +218,7 @@ if __name__ == '__main__':
             #  Text-Embedding
             # -----------------
 
-            idx = np.random.randint(5)
-            texts = text[:, idx, :]
-            text_embedding = text_encoder(texts.cuda(cuda_id) if cuda_enable else texts)
+            text_embedding = text_encoder(texts)
             text_embedding = text_embedding[:, -1].unsqueeze(2).unsqueeze(3)
             text_embedding = text_embedding.detach()
 
@@ -219,8 +229,7 @@ if __name__ == '__main__':
             optimizer_G.zero_grad()
 
             # generate fake images with text-embedding
-            z = torch.randn(size=(batch_size, latent_dim, 1, 1))
-            gen_images = generator(text_embedding, z.cuda(cuda_id) if cuda_enable else z)
+            gen_images = generator(text_embedding, z)
 
             # Loss measures generator's ability to fool the discriminator
             validity = discriminator(gen_images, text_embedding)
