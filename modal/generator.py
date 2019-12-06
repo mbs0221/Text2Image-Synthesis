@@ -40,6 +40,5 @@ class MBSGenerator(nn.Module):
             # [-, nc, 64, 64]
         )
 
-    def forward(self, input, z):
-        embedding = torch.cat([input, z], 1)
+    def forward(self, embedding):
         return self.generator(embedding)

@@ -132,10 +132,6 @@ if __name__ == '__main__':
     generator = MBSGenerator(latent_dim, text_dim, ngf, n_channels)
     discriminator = MBSDiscriminator(ndf, text_dim, n_channels)
     # discriminator = QHDiscriminator(text_dim, text_reduced_dim)
-    if cuda_enable:
-        text_encoder.cuda(cuda_id)
-        generator.cuda(cuda_id)
-        discriminator.cuda(cuda_id)
 
     # load pre-trained modal
     print('load pre-trained modal')
@@ -160,6 +156,9 @@ if __name__ == '__main__':
     tv_loss = TVLoss()
 
     if cuda_enable:
+        text_encoder.cuda(cuda_id)
+        generator.cuda(cuda_id)
+        discriminator.cuda(cuda_id)
         l1_loss.cuda(cuda_id)
         tv_loss.cuda(cuda_id)
         adversarial_loss.cuda(cuda_id)
@@ -229,7 +228,8 @@ if __name__ == '__main__':
             optimizer_G.zero_grad()
 
             # generate fake images with text-embedding
-            gen_images = generator(text_embedding, z)
+            embedding = torch.cat([text_embedding, z], 1)
+            gen_images = generator(embedding)
 
             # Loss measures generator's ability to fool the discriminator
             validity = discriminator(gen_images, text_embedding)
