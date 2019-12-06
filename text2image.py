@@ -220,6 +220,8 @@ if __name__ == '__main__':
             text_embedding = text_encoder(texts)
             text_embedding = text_embedding[:, -1].unsqueeze(2).unsqueeze(3)
             text_embedding = text_embedding.detach()
+            if cuda_enable:
+                text_embedding.cuda(cuda_id)
 
             # -----------------
             #  Train Generator
