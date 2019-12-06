@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="ubuntu@10.10.102.244:22" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="zhaowen@10.108.208.113:22" autoUploadExternalChanges="true">
     <serverData>
       <paths name="ubuntu@10.10.102.241:22">
         <serverdata>
@@ -18,6 +18,19 @@
             <excludedPath local="true" path="$PROJECT_DIR$/.ipynb_checkpoints" />
             <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
             <excludedPath local="true" path="$PROJECT_DIR$/.github" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+      <paths name="zhaowen@10.108.208.113:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/Text2Image-Synthesis/Text2Image-Synthesis" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/.github" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.idea" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.ipynb_checkpoints" />
+            <excludedPath local="true" path="$PROJECT_DIR$/.vector_cache" />
           </excludedPaths>
         </serverdata>
       </paths>

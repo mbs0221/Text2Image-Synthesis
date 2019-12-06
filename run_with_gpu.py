@@ -5,6 +5,7 @@ import time
 
 import torch.nn.functional as F
 import torch
+from torch.autograd import Variable
 from torch import nn
 from torch.nn import init
 from torch.utils.data import DataLoader
@@ -64,12 +65,10 @@ def write_log(path, batch, text, vocab):
         f.writelines(captions)
 
 
-has_cuda = True if torch.cuda.is_available() else False
-
 if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--root', default='../datasets/coco-2014/', type=str, help='coco-dataset folder')
+    parser.add_argument('--root', default='../coco-2014/', type=str, help='coco-dataset folder')
     parser.add_argument('--batch_size', default=32, type=int, help='the training epochs')
     parser.add_argument('--n_epochs', default=100, type=int, help='the training epochs')
     parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
@@ -105,7 +104,7 @@ if __name__ == '__main__':
     ngf = args.ngf
     ndf = args.ndf
     cuda_id = args.cuda_id
-    cuda_enable = has_cuda and args.use_cuda
+    cuda_enable = torch.cuda.is_available() and args.use_cuda
 
     # load glove
     glove = GloVe(name='6B', dim=100)
@@ -155,13 +154,9 @@ if __name__ == '__main__':
     l1_loss = torch.nn.L1Loss()
     tv_loss = TVLoss()
 
-    if cuda_enable:
-        text_encoder.cuda(cuda_id)
-        generator.cuda(cuda_id)
-        discriminator.cuda(cuda_id)
-        l1_loss.cuda(cuda_id)
-        tv_loss.cuda(cuda_id)
-        adversarial_loss.cuda(cuda_id)
+    list = [text_encoder, generator, discriminator, adversarial_loss, l1_loss, tv_loss]
+    for item in list:
+        item.cuda(cuda_id)
 
     # optimizers
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
@@ -184,44 +179,32 @@ if __name__ == '__main__':
 
             batch_size = len(image)
             # adversarial ground truths
-            valid_labels = torch.ones(size=torch.Size([batch_size]), dtype=torch.float32)
-            fake_labels = torch.zeros(size=torch.Size([batch_size]), dtype=torch.float32)
+            valid_labels = torch.ones(size=torch.Size([batch_size]), dtype=torch.float32).cuda(cuda_id)
+            fake_labels = torch.zeros(size=torch.Size([batch_size]), dtype=torch.float32).cuda(cuda_id)
 
             # real-images
-            real_images = torch.stack(image)
+            real_images = torch.stack(image).cuda(cuda_id)
 
             # real-texts
             idx = np.random.randint(5)
             texts = text[:, idx, :]
 
             # random noise
-            z = torch.randn(size=(batch_size, latent_dim, 1, 1))
+            z = torch.randn(size=(batch_size, latent_dim, 1, 1)).cuda(cuda_id)
 
             # miss-match images
             ids = np.arange(0, batch_size, 1)
             _ids = np.random.permutation(ids)
             wrong_images = real_images[_ids]
-            match_labels = torch.from_numpy(ids == _ids).type(torch.float32)
-
-            # convert to CUDA variable
-            if cuda_enable:
-                texts.cuda(cuda_id)
-                z.cuda(cuda_id)
-                real_images.cuda(cuda_id)
-                wrong_images.cuda(cuda_id)
-                valid_labels.cuda(cuda_id)
-                fake_labels.cuda(cuda_id)
-                match_labels.cuda(cuda_id)
+            match_labels = torch.from_numpy(ids == _ids).type(torch.float32).cuda(cuda_id)
 
             # -----------------
             #  Text-Embedding
             # -----------------
 
-            text_embedding = text_encoder(texts)
+            text_embedding = text_encoder(texts.cuda(cuda_id))
             text_embedding = text_embedding[:, -1].unsqueeze(2).unsqueeze(3)
             text_embedding = text_embedding.detach()
-            if cuda_enable:
-                text_embedding.cuda(cuda_id)
 
             # -----------------
             #  Train Generator
@@ -264,8 +247,8 @@ if __name__ == '__main__':
             optimizer_D.step()
 
             print(
-                "[%s][Epoch %3d/%d] [Batch %4d/%4d] [D loss: %f] [G loss: %f]"
-                % (time.asctime(), epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
+                    "[%s][Epoch %3d/%d] [Batch %4d/%4d] [D loss: %f] [G loss: %f]"
+                    % (time.asctime(), epoch, args.n_epochs, i, len(train_iterator), d_loss.item(), g_loss.item())
             )
 
             batches_done = epoch * len(train_iterator) + i
