@@ -40,8 +40,6 @@ class MBSGenerator(nn.Module):
             # [-, nc, 64, 64]
         )
 
-    def forward(self, input):
-        batch_size = input.shape[0]
-        z = torch.rand(batch_size, self.latent_dim, 1, 1)
+    def forward(self, input, z):
         embedding = torch.cat([input, z], 1)
         return self.generator(embedding)

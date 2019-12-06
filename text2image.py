@@ -219,7 +219,8 @@ if __name__ == '__main__':
             optimizer_G.zero_grad()
 
             # generate fake images with text-embedding
-            gen_images = generator(text_embedding)
+            z = torch.randn(size=(batch_size, latent_dim, 1, 1))
+            gen_images = generator(text_embedding, z.cuda(cuda_id) if cuda_enable else z)
 
             # Loss measures generator's ability to fool the discriminator
             validity = discriminator(gen_images, text_embedding)
