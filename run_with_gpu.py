@@ -74,7 +74,8 @@ if __name__ == '__main__':
     parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
     parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
     parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
-    parser.add_argument('--l1_coeff', type=float, default=50, help='the l1 coefficient loss')
+    parser.add_argument('--l1_coeff', type=float, default=0.1, help='the coefficient of l1-loss')
+    parser.add_argument('--tv_coeff', type=float, default=0.1, help='the coefficient of tv-loss')
     parser.add_argument('--latent_dim', default=12, type=int, help='the dimensional of latent space')
     parser.add_argument('--text_dim', default=96, type=int, help='the dimensional of text-embedding')
     parser.add_argument('--text_reduced_dim', default=48, type=int, help='the dimensional of text-embedding')
@@ -186,8 +187,8 @@ if __name__ == '__main__':
             real_images = torch.stack(image).cuda(cuda_id)
 
             # real-texts
-            idx = np.random.randint(5)
-            texts = text[:, idx, :]
+            # idx = np.random.randint(5)
+            texts = text[:, 0, :]
 
             # random noise
             z = torch.randn(size=(batch_size, latent_dim, 1, 1)).cuda(cuda_id)
@@ -219,7 +220,7 @@ if __name__ == '__main__':
             # Loss measures generator's ability to fool the discriminator
             validity = discriminator(gen_images, text_embedding)
             g_loss = adversarial_loss(validity, valid_labels) \
-                     + args.l1_coeff * l1_loss(gen_images, real_images) + tv_loss(gen_images)
+                     + args.l1_coeff * l1_loss(gen_images, real_images) + args.tv_coeff * tv_loss(gen_images)
             g_loss.backward()
             optimizer_G.step()
 

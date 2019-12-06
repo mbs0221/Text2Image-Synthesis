@@ -73,7 +73,7 @@ class ZQHDiscriminator(nn.Module):
 
 class MBSDiscriminator(nn.Module):
 
-    def __init__(self, ndf, text_dim, n_channels):
+    def __init__(self, text_dim, ndf=128, n_channels=3):
         super(MBSDiscriminator, self).__init__()
         self.text_dim = text_dim
         self.extractor64 = nn.Sequential(
