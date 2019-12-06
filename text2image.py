@@ -89,6 +89,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_interval', type=int, default=300, help="interval between image sampling")
     parser.add_argument('--use_cuda', type=bool, default=True, help='use cuda for training')
     parser.add_argument('--log_path', type=str, default='./log.txt', help='generating log')
+    parser.add_argument('--cuda_id', type=int, default=2, help='cuda_id')
     args = parser.parse_args()
 
     root = args.root
@@ -103,6 +104,8 @@ if __name__ == '__main__':
     n_channels = args.n_channels
     ngf = args.ngf
     ndf = args.ndf
+    cuda_id = args.cuda_id
+    cuda_enable = has_cuda and args.use_cuda
 
     # load glove
     glove = GloVe(name='6B', dim=100)
@@ -129,6 +132,10 @@ if __name__ == '__main__':
     generator = MBSGenerator(latent_dim, text_dim, ngf, n_channels)
     discriminator = MBSDiscriminator(ndf, text_dim, n_channels)
     # discriminator = QHDiscriminator(text_dim, text_reduced_dim)
+    if cuda_enable:
+        text_encoder.cuda(cuda_id)
+        generator.cuda(cuda_id)
+        discriminator.cuda(cuda_id)
 
     # load pre-trained modal
     print('load pre-trained modal')
@@ -152,15 +159,10 @@ if __name__ == '__main__':
     l1_loss = torch.nn.L1Loss()
     tv_loss = TVLoss()
 
-    # CUDA
-    cuda_enable = has_cuda and args.use_cuda
     if cuda_enable:
-        text_encoder.cuda()
-        generator.cuda()
-        discriminator.cuda()
-        l1_loss.cuda()
-        tv_loss.cuda()
-        adversarial_loss.cuda()
+        l1_loss.cuda(cuda_id)
+        tv_loss.cuda(cuda_id)
+        adversarial_loss.cuda(cuda_id)
 
     # optimizers
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr, betas=(args.b1, args.b2))
@@ -169,7 +171,7 @@ if __name__ == '__main__':
     # ----------
     #  Training
     # ----------
-    device = torch.device('cuda:2' if cuda_enable else 'cpu')
+    device = torch.device(cuda_id if cuda_enable else 'cpu')
     train_iterator, val_iterator = data.BucketIterator.splits(
         (train, val),
         batch_size=batch_size,
@@ -196,9 +198,9 @@ if __name__ == '__main__':
             match_labels = torch.from_numpy(ids == _ids).type(torch.float32)
 
             if cuda_enable:
-                valid_labels.cuda()
-                fake_labels.cuda()
-                match_labels.cuda()
+                valid_labels.cuda(cuda_id)
+                fake_labels.cuda(cuda_id)
+                match_labels.cuda(cuda_id)
 
             # -----------------
             #  Text-Embedding
@@ -206,7 +208,7 @@ if __name__ == '__main__':
 
             idx = np.random.randint(5)
             texts = text[:, idx, :]
-            text_embedding = text_encoder(texts)
+            text_embedding = text_encoder(texts.cuda(cuda_id) if cuda_enable else texts)
             text_embedding = text_embedding[:, -1].unsqueeze(2).unsqueeze(3)
             text_embedding = text_embedding.detach()
 
