@@ -1,3 +1,4 @@
 pycocotools
 spacy
 torchtext
+opencv-python

@@ -47,8 +47,8 @@ def get_dataset(path, ann_path, text_field, transforms=None, transform=None, tar
         img = Image.open(os.path.join(path, img_path)).convert('RGB')
         if transforms is not None:
             img, captions = transforms(img, captions)
-
         examples.append(Example.fromlist([captions, img], fields))
+
     return examples, fields
 
 
