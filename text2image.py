@@ -112,10 +112,10 @@ if __name__ == '__main__':
     field = data.Field(sequential=True, tokenize=data.get_tokenizer(tokenizer='basic_english'), lower=True)
     TEXT = data.NestedField(field, use_vocab=True)
     train = datasets.coco_caption(root, 'train', TEXT)
-    val = datasets.coco_caption(root, 'val', TEXT)
+    # val = datasets.coco_caption(root, 'val', TEXT)
 
     print('build vocabulary from dataset')
-    TEXT.build_vocab(train, val, vectors=glove)
+    TEXT.build_vocab(train, vectors=glove)
     TEXT.vocab.vectors.unk_init = init.xavier_uniform
 
     # build vocabulary from dataset
@@ -168,8 +168,8 @@ if __name__ == '__main__':
     #  Training
     # ----------
     device = torch.device('cuda:2' if cuda_enable else 'cpu')
-    train_iterator, test_iterator = data.BucketIterator.splits(
-        (train, val),
+    train_iterator = data.BucketIterator.splits(
+        (train),
         batch_size=batch_size,
         device=device,
         repeat=False
