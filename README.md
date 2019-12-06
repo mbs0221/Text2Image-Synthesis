@@ -21,5 +21,5 @@ Run python script
 ~~~
 $ pip3 install -r requirements.txt
 $ python3 utils/resize_image.py --source=coco-2014/images --target=coco-2014/resized/
-$ python3 run_with_gpu.py --root=../coco-2014 --sample_interval=10000
+$ run_with_gpu.py --root=../coco-2014 --sample_interval=20 --cuda_id=1 --batch_size=128
 ~~~
