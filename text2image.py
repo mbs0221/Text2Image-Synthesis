@@ -168,7 +168,7 @@ if __name__ == '__main__':
     # ----------
     #  Training
     # ----------
-    device = torch.device('cuda' if cuda_enable else 'cpu')
+    device = torch.device('cuda:2' if cuda_enable else 'cpu')
     train_iterator, test_iterator = data.BucketIterator.splits(
         (train, val),
         batch_size=batch_size,
