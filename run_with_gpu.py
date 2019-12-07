@@ -129,9 +129,9 @@ if __name__ == '__main__':
     # define modules
     print('construct text-encoder, generator, discriminator')
     text_encoder = TextEncoder(vocab_size, embedding_dim, text_dim, kqv_dim, embedding, padding_idx=PAD_IDX)
-    generator = MBSGenerator(latent_dim, text_dim, ngf, n_channels)
-    discriminator = MBSDiscriminator(ndf, text_dim, n_channels)
-    # discriminator = QHDiscriminator(text_dim, text_reduced_dim)
+    generator = MBSGenerator(latent_dim, text_dim, ngf)
+    discriminator = MBSDiscriminator(text_dim, ndf)
+    # discriminator = ZQHDiscriminator(text_dim, text_reduced_dim)
 
     # load pre-trained modal
     print('load pre-trained modal')
