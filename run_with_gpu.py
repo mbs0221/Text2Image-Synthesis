@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', default='../coco-2014/', type=str, help='coco-dataset folder')
-    parser.add_argument('--batch_size', default=32, type=int, help='the training epochs')
+    parser.add_argument('--batch_size', default=128, type=int, help='the training epochs')
     parser.add_argument('--n_epochs', default=100, type=int, help='the training epochs')
     parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
     parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
