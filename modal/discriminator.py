@@ -80,19 +80,19 @@ class MBSDiscriminator(nn.Module):
             # [-, nc, 64, 64]
             nn.Conv2d(n_channels, ndf, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf),
-            nn.ReLU(True),
+            nn.LeakyReLU(inplace=True),
             # [-, ndf, 32, 32]
             nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 2),
-            nn.ReLU(True),
+            nn.LeakyReLU(inplace=True),
             # [-, ndf*2, 16, 16]
             nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 4),
-            nn.ReLU(True),
+            nn.LeakyReLU(inplace=True),
             # [-, ndf*4, 8, 8]
             nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(ndf * 8),
-            nn.ReLU(True),
+            nn.LeakyReLU(inplace=True),
             # [-, ndf*8, 4, 4]
         )
         embedding_dim = ndf * 8 + text_dim
@@ -100,10 +100,9 @@ class MBSDiscriminator(nn.Module):
             # [-, embedding_dim, 4, 4]
             nn.Conv2d(embedding_dim, ndf, 1, 1, 0, bias=False),
             nn.BatchNorm2d(ndf),
-            nn.ReLU(True),
+            nn.LeakyReLU(inplace=True),
             # [-, ndf, 4, 4]
-            nn.Conv2d(ndf, 1, 3, 1, 0, bias=False),
-            nn.MaxPool2d(2),
+            nn.Conv2d(ndf, 1, 4, 1, 0, bias=False),
             nn.Sigmoid()
             # [-, 1, 1, 1]
         )

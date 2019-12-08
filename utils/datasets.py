@@ -9,6 +9,7 @@ from torchvision import transforms
 from torchvision import datasets
 from torchvision.datasets import Flickr8k
 from torchvision.datasets.vision import StandardTransform
+from torchvision.datasets import CocoCaptions
 
 
 def get_dataset(path, ann_path, text_field, transforms=None, transform=None, target_transform=None):
@@ -48,6 +49,8 @@ def get_dataset(path, ann_path, text_field, transforms=None, transform=None, tar
         if transforms is not None:
             img, captions = transforms(img, captions)
         examples.append(Example.fromlist([captions, img], fields))
+        if len(examples) > 1000:
+            break
 
     return examples, fields
 

@@ -107,6 +107,11 @@ if __name__ == '__main__':
     cuda_id = args.cuda_id
     cuda_enable = torch.cuda.is_available() and args.use_cuda
 
+    # random seed
+    SEED = 2019
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+
     # load glove
     glove = GloVe(name='6B', dim=100)
 
@@ -143,8 +148,8 @@ if __name__ == '__main__':
     for (model, path) in pairs:
         if os.path.exists(path):
             model.load_state_dict(torch.load(path))
-        else:
-            model.apply(weights_init_normal)
+        # else:
+        #     model.apply(weights_init_normal)
 
     # create image folder
     if not os.path.exists('./images'):
@@ -187,8 +192,8 @@ if __name__ == '__main__':
             real_images = torch.stack(image).cuda(cuda_id)
 
             # real-texts
-            # idx = np.random.randint(5)
-            texts = text[:, 0, :]
+            idx = np.random.randint(5)
+            texts = text[:, idx, :]
 
             # random noise
             z = torch.randn(size=(batch_size, latent_dim, 1, 1)).cuda(cuda_id)
