@@ -79,7 +79,6 @@ class MBSDiscriminator(nn.Module):
         self.extractor64 = nn.Sequential(
             # [-, nc, 64, 64]
             nn.Conv2d(n_channels, ndf, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(ndf),
             nn.LeakyReLU(inplace=True),
             # [-, ndf, 32, 32]
             nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),

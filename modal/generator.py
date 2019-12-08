@@ -36,7 +36,6 @@ class MBSGenerator(nn.Module):
             nn.LeakyReLU(0.2, True),
             # [-, 128, 32, 32]
             nn.ConvTranspose2d(ngf, n_channels, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(n_channels),
             nn.Tanh()
             # [-, nc, 64, 64]
         )

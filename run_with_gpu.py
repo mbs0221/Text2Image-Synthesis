@@ -148,8 +148,8 @@ if __name__ == '__main__':
     for (model, path) in pairs:
         if os.path.exists(path):
             model.load_state_dict(torch.load(path))
-        # else:
-        #     model.apply(weights_init_normal)
+        else:
+            model.apply(weights_init_normal)
 
     # create image folder
     if not os.path.exists('./images'):
