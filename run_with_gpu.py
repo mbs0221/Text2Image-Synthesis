@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', default='../coco-2014/', type=str, help='coco-dataset folder')
-    parser.add_argument('--batch_size', default=128, type=int, help='the training epochs')
+    parser.add_argument('--batch_size', default=64, type=int, help='the training epochs')
     parser.add_argument('--n_epochs', default=100, type=int, help='the training epochs')
     parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
     parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
@@ -261,7 +261,7 @@ if __name__ == '__main__':
 
             batches_done = epoch * len(train_iterator) + i
             if batches_done % args.sample_interval == 0:
-                save_image(gen_images.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+                save_image(gen_images.data[:64], "images/%d.png" % batches_done, nrow=8, normalize=True)
                 write_log(args.log_path, batches_done, texts, TEXT.vocab)
 
         for (model, path) in pairs:
