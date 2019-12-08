@@ -23,13 +23,13 @@ class TextEncoder(nn.Module):
         super(TextEncoder, self).__init__()
         self.embed = nn.Embedding(vocab_size, embedding_dim=embedding_dim, _weight=weight, padding_idx=padding_idx)
         if rnn_type == 'rnn':
-            self.rnn = RNN(embedding_dim, hidden_size, bidirectional=bidirectional, num_layers=6,
+            self.rnn = RNN(embedding_dim, hidden_size, bidirectional=bidirectional, num_layers=2,
                            batch_first=batch_first)
         elif rnn_type == 'gru':
-            self.rnn = GRU(embedding_dim, hidden_size, bidirectional=bidirectional, num_layers=6,
+            self.rnn = GRU(embedding_dim, hidden_size, bidirectional=bidirectional, num_layers=2,
                            batch_first=batch_first)
         elif rnn_type == 'lstm':
-            self.rnn = LSTM(embedding_dim, hidden_size, bidirectional=bidirectional, num_layers=6,
+            self.rnn = LSTM(embedding_dim, hidden_size, bidirectional=bidirectional, num_layers=2,
                             batch_first=batch_first)
 
     def forward(self, input_ids):
