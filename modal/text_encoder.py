@@ -8,7 +8,7 @@ from torchtext import data
 
 class TextEncoder(nn.Module):
 
-    def __init__(self, vocab_size, embedding_dim, hidden_size, kqv_dim, weight, rnn_type='gru', bidirectional=True,
+    def __init__(self, vocab_size, embedding_dim, hidden_size, kqv_dim, weight, rnn_type='gru', bidirectional=False,
                  batch_first=False, padding_idx=None):
         """
 

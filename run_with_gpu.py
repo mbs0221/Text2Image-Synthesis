@@ -78,6 +78,7 @@ if __name__ == '__main__':
     parser.add_argument('--tv_coeff', type=float, default=0.1, help='the coefficient of tv-loss')
     parser.add_argument('--latent_dim', default=12, type=int, help='the dimensional of latent space')
     parser.add_argument('--text_dim', default=96, type=int, help='the dimensional of text-embedding')
+    parser.add_argument('--bidirectional', default=True, type=bool, help='use bidirectional rnn')
     parser.add_argument('--text_reduced_dim', default=48, type=int, help='the dimensional of text-embedding')
     parser.add_argument('--cond_dim', default=48, type=int, help='the dimensional of conditioning')
     parser.add_argument('--image_size', default=64, type=int, help='the image size')
@@ -97,6 +98,7 @@ if __name__ == '__main__':
     n_epochs = args.n_epochs
     latent_dim = args.latent_dim
     text_dim = args.text_dim
+    bidirectional = args.bidirectional
     text_reduced_dim = args.text_reduced_dim
     cond_dim = args.cond_dim
     kqv_dim = args.kqv_dim
