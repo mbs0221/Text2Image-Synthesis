@@ -1,22 +1,16 @@
 import argparse
 import os
-import numpy as np
 import time
 
-import torch.nn.functional as F
+import numpy as np
 import torch
-from torch.autograd import Variable
 from torch import nn
 from torch.nn import init
-from torch.utils.data import DataLoader
-
 from torchtext import data
-from torchtext.vocab import Vectors, GloVe
-
-import torchvision.models as models
+from torchtext.vocab import GloVe
 from torchvision.utils import save_image
 
-from modal import MBSGenerator, ZQHDiscriminator, MBSDiscriminator, Attn, TextEncoder, TVLoss
+from modal import MBSGenerator, MBSDiscriminator, TextEncoder, TVLoss
 from utils import datasets
 
 
