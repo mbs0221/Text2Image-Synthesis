@@ -1,15 +1,10 @@
 import os
 
 from PIL import Image
-
 from torchtext import data
 from torchtext.data import Example
-
 from torchvision import transforms
-from torchvision import datasets
-from torchvision.datasets import Flickr8k
 from torchvision.datasets.vision import StandardTransform
-from torchvision.datasets import CocoCaptions
 
 
 def get_dataset(path, ann_path, text_field, transforms=None, transform=None, target_transform=None):
