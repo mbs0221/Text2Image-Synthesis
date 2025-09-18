@@ -1,0 +1,8 @@
+coco-2014
+images
+__pycache__
+.vector_cache
+.github
+.idea
+*.pkl
+*.zip
